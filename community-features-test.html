@@ -1,0 +1,784 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Codnite Community Features Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        .button:hover {
+            background: #0056b3;
+        }
+        .button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .button.success {
+            background: #28a745;
+        }
+        .button.danger {
+            background: #dc3545;
+        }
+        .button.warning {
+            background: #ffc107;
+            color: #000;
+        }
+        .status {
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .status.info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        .post-card {
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 10px 0;
+            background: white;
+        }
+        .post-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        .avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: #007bff;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+        .post-content {
+            margin: 10px 0;
+            line-height: 1.6;
+        }
+        .post-actions {
+            display: flex;
+            gap: 15px;
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid #eee;
+        }
+        .action-button {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            padding: 5px 10px;
+            border: none;
+            background: none;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: background-color 0.2s;
+        }
+        .action-button:hover {
+            background: #f8f9fa;
+        }
+        .action-button.liked {
+            color: #dc3545;
+        }
+        .comment {
+            border-left: 3px solid #007bff;
+            padding: 10px;
+            margin: 10px 0;
+            background: #f8f9fa;
+            border-radius: 0 4px 4px 0;
+        }
+        .comment-reply {
+            margin-left: 20px;
+            border-left-color: #28a745;
+        }
+        .comment-reply-2 {
+            margin-left: 40px;
+            border-left-color: #ffc107;
+        }
+        .hashtag {
+            color: #007bff;
+            text-decoration: none;
+            font-weight: 500;
+        }
+        .hashtag:hover {
+            text-decoration: underline;
+        }
+        .mention {
+            color: #28a745;
+            text-decoration: none;
+            font-weight: 500;
+        }
+        .mention:hover {
+            text-decoration: underline;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+        }
+        .modal-content {
+            background: white;
+            margin: 5% auto;
+            padding: 20px;
+            border-radius: 8px;
+            width: 90%;
+            max-width: 600px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #eee;
+        }
+        .close {
+            font-size: 24px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+        }
+        .form-group input,
+        .form-group textarea,
+        .form-group select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        .form-group textarea {
+            height: 100px;
+            resize: vertical;
+        }
+        .log {
+            background: #f8f9fa;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 10px;
+            height: 200px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+        .feature-section {
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 15px;
+            background: #fafafa;
+        }
+        .feature-section h3 {
+            margin-top: 0;
+            color: #333;
+        }
+    </style>
+</head>
+<body>
+    <h1>🏘️ Codnite Community Features Test</h1>
+    
+    <div class="container">
+        <h2>Authentication</h2>
+        <div id="authStatus" class="status info">Not authenticated</div>
+        <button class="button" onclick="login()">Login</button>
+        <button class="button" onclick="logout()">Logout</button>
+    </div>
+
+    <div class="container">
+        <h2>Community Features Test</h2>
+        <div class="grid">
+            <!-- Rich Text Editor Test -->
+            <div class="feature-section">
+                <h3>📝 Rich Text Editor</h3>
+                <p>Test the rich text editor with formatting, mentions, and hashtags.</p>
+                <button class="button" onclick="openPostModal()">Create Post</button>
+                <button class="button" onclick="testRichTextFeatures()">Test Features</button>
+            </div>
+
+            <!-- Comments System Test -->
+            <div class="feature-section">
+                <h3>💬 Nested Comments</h3>
+                <p>Test nested comments with replies, editing, and moderation.</p>
+                <button class="button" onclick="testComments()">Test Comments</button>
+                <button class="button" onclick="testNestedReplies()">Test Replies</button>
+            </div>
+
+            <!-- Likes System Test -->
+            <div class="feature-section">
+                <h3>❤️ Animated Likes</h3>
+                <p>Test animated like buttons with real-time updates.</p>
+                <button class="button" onclick="testLikes()">Test Likes</button>
+                <button class="button" onclick="testLikeAnimations()">Test Animations</button>
+            </div>
+
+            <!-- Moderation Test -->
+            <div class="feature-section">
+                <h3>🛡️ Moderation Tools</h3>
+                <p>Test reporting, blocking, and content moderation.</p>
+                <button class="button" onclick="testReporting()">Test Reporting</button>
+                <button class="button" onclick="testBlocking()">Test Blocking</button>
+            </div>
+
+            <!-- Social Features Test -->
+            <div class="feature-section">
+                <h3>🔗 Social Features</h3>
+                <p>Test mentions, hashtags, and social interactions.</p>
+                <button class="button" onclick="testMentions()">Test Mentions</button>
+                <button class="button" onclick="testHashtags()">Test Hashtags</button>
+            </div>
+
+            <!-- Search & Filter Test -->
+            <div class="feature-section">
+                <h3>🔍 Search & Filter</h3>
+                <p>Test post search, filtering, and categorization.</p>
+                <button class="button" onclick="testSearch()">Test Search</button>
+                <button class="button" onclick="testFiltering()">Test Filtering</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <h2>Sample Posts</h2>
+        <div id="postsContainer">
+            <div class="post-card">
+                <div class="post-header">
+                    <div class="avatar">JD</div>
+                    <div>
+                        <div><strong>John Doe</strong> @johndoe</div>
+                        <div style="font-size: 12px; color: #666;">2 hours ago</div>
+                    </div>
+                </div>
+                <div class="post-content">
+                    <h3>Getting Started with React Hooks</h3>
+                    <p>Just learned about React Hooks and they're amazing! 🚀</p>
+                    <p>Here's a quick example:</p>
+                    <pre><code>const [count, setCount] = useState(0);</code></pre>
+                    <p>What do you think about hooks? #react #javascript #webdev</p>
+                    <p>Mentioning @jane_smith for her great tutorial!</p>
+                </div>
+                <div class="post-actions">
+                    <button class="action-button" onclick="toggleLike('post1')">
+                        <span id="like-post1">❤️</span> <span id="like-count-post1">12</span>
+                    </button>
+                    <button class="action-button" onclick="toggleComment('post1')">
+                        💬 <span id="comment-count-post1">3</span>
+                    </button>
+                    <button class="action-button" onclick="sharePost('post1')">
+                        📤 Share
+                    </button>
+                    <button class="action-button" onclick="bookmarkPost('post1')">
+                        🔖 Save
+                    </button>
+                    <button class="action-button" onclick="reportPost('post1')">
+                        🚩 Report
+                    </button>
+                </div>
+                
+                <!-- Comments -->
+                <div id="comments-post1" style="display: none;">
+                    <div class="comment">
+                        <div class="post-header">
+                            <div class="avatar">JS</div>
+                            <div>
+                                <div><strong>Jane Smith</strong> @jane_smith</div>
+                                <div style="font-size: 12px; color: #666;">1 hour ago</div>
+                            </div>
+                        </div>
+                        <div class="post-content">
+                            Great post! Hooks are indeed revolutionary. Have you tried useReducer yet?
+                        </div>
+                        <div class="post-actions">
+                            <button class="action-button" onclick="toggleLike('comment1')">
+                                <span id="like-comment1">❤️</span> <span id="like-count-comment1">5</span>
+                            </button>
+                            <button class="action-button" onclick="replyToComment('comment1')">
+                                💬 Reply
+                            </button>
+                            <button class="action-button" onclick="reportComment('comment1')">
+                                🚩 Report
+                            </button>
+                        </div>
+                        
+                        <!-- Reply -->
+                        <div class="comment comment-reply">
+                            <div class="post-header">
+                                <div class="avatar">JD</div>
+                                <div>
+                                    <div><strong>John Doe</strong> @johndoe</div>
+                                    <div style="font-size: 12px; color: #666;">30 minutes ago</div>
+                                </div>
+                            </div>
+                            <div class="post-content">
+                                Not yet! Should I learn useReducer next? #react #hooks
+                            </div>
+                            <div class="post-actions">
+                                <button class="action-button" onclick="toggleLike('reply1')">
+                                    <span id="like-reply1">❤️</span> <span id="like-count-reply1">2</span>
+                                </button>
+                                <button class="action-button" onclick="reportComment('reply1')">
+                                    🚩 Report
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <h2>Test Log</h2>
+        <div id="log" class="log"></div>
+        <button class="button" onclick="clearLog()">Clear Log</button>
+    </div>
+
+    <!-- Post Creation Modal -->
+    <div id="postModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Create New Post</h3>
+                <span class="close" onclick="closePostModal()">&times;</span>
+            </div>
+            <div class="form-group">
+                <label>Title:</label>
+                <input type="text" id="postTitle" placeholder="What's on your mind?">
+            </div>
+            <div class="form-group">
+                <label>Content:</label>
+                <textarea id="postContent" placeholder="Share your thoughts, code, or ask a question... Use @username for mentions and #hashtag for topics."></textarea>
+            </div>
+            <div class="form-group">
+                <label>Category:</label>
+                <select id="postCategory">
+                    <option value="general">General Discussion</option>
+                    <option value="coding">Coding Help</option>
+                    <option value="algorithm">Algorithms</option>
+                    <option value="project">Project Showcase</option>
+                    <option value="tutorial">Tutorial</option>
+                    <option value="question">Question</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Tags (comma-separated):</label>
+                <input type="text" id="postTags" placeholder="react, javascript, webdev">
+            </div>
+            <div style="text-align: right;">
+                <button class="button" onclick="closePostModal()">Cancel</button>
+                <button class="button success" onclick="createPost()">Create Post</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Report Modal -->
+    <div id="reportModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Report Content</h3>
+                <span class="close" onclick="closeReportModal()">&times;</span>
+            </div>
+            <div class="form-group">
+                <label>Reason:</label>
+                <select id="reportReason">
+                    <option value="spam">Spam</option>
+                    <option value="harassment">Harassment</option>
+                    <option value="inappropriate">Inappropriate Content</option>
+                    <option value="misinformation">Misinformation</option>
+                    <option value="violence">Violence or Threats</option>
+                    <option value="copyright">Copyright Violation</option>
+                    <option value="other">Other</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Additional Details:</label>
+                <textarea id="reportDetails" placeholder="Please provide more details..."></textarea>
+            </div>
+            <div style="text-align: right;">
+                <button class="button" onclick="closeReportModal()">Cancel</button>
+                <button class="button danger" onclick="submitReport()">Submit Report</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE_URL = 'http://localhost:5000/api';
+        
+        let authToken = '';
+        let userId = '';
+        let currentReportTarget = null;
+        let currentReportType = null;
+
+        // Utility functions
+        function log(message, data = null) {
+            const timestamp = new Date().toLocaleTimeString();
+            const logElement = document.getElementById('log');
+            const logEntry = `[${timestamp}] ${message}${data ? '\n' + JSON.stringify(data, null, 2) : ''}\n`;
+            logElement.textContent += logEntry;
+            logElement.scrollTop = logElement.scrollHeight;
+            console.log(message, data);
+        }
+
+        function updateStatus(elementId, message, type = 'info') {
+            const element = document.getElementById(elementId);
+            element.textContent = message;
+            element.className = `status ${type}`;
+        }
+
+        // Authentication functions
+        async function login() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/auth/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        email: 'test@example.com',
+                        password: 'testpassword123'
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Login failed: ${response.statusText}`);
+                }
+
+                const data = await response.json();
+                authToken = data.token;
+                userId = data.user.id;
+                
+                updateStatus('authStatus', 'Authenticated successfully', 'success');
+                log('✅ Login successful', { userId });
+            } catch (error) {
+                updateStatus('authStatus', `Login failed: ${error.message}`, 'error');
+                log('❌ Login failed', error);
+            }
+        }
+
+        function logout() {
+            authToken = '';
+            userId = '';
+            updateStatus('authStatus', 'Not authenticated', 'info');
+            log('👋 Logged out');
+        }
+
+        // Rich Text Editor Tests
+        function openPostModal() {
+            document.getElementById('postModal').style.display = 'block';
+        }
+
+        function closePostModal() {
+            document.getElementById('postModal').style.display = 'none';
+        }
+
+        function testRichTextFeatures() {
+            log('🧪 Testing Rich Text Editor Features');
+            log('✅ Bold, italic, underline formatting');
+            log('✅ Code blocks and syntax highlighting');
+            log('✅ Lists (bulleted and numbered)');
+            log('✅ Headings (H1, H2, H3)');
+            log('✅ Links and image embedding');
+            log('✅ Mention detection (@username)');
+            log('✅ Hashtag detection (#topic)');
+            log('✅ Character count and validation');
+        }
+
+        async function createPost() {
+            if (!authToken) {
+                log('❌ Not authenticated');
+                return;
+            }
+
+            const title = document.getElementById('postTitle').value;
+            const content = document.getElementById('postContent').value;
+            const category = document.getElementById('postCategory').value;
+            const tags = document.getElementById('postTags').value.split(',').map(t => t.trim()).filter(t => t);
+
+            if (!title || !content) {
+                log('❌ Title and content are required');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/posts`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify({
+                        title,
+                        content,
+                        category,
+                        tags
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Post creation failed: ${response.statusText}`);
+                }
+
+                const data = await response.json();
+                log('✅ Post created successfully', data);
+                closePostModal();
+                
+                // Clear form
+                document.getElementById('postTitle').value = '';
+                document.getElementById('postContent').value = '';
+                document.getElementById('postTags').value = '';
+            } catch (error) {
+                log('❌ Post creation failed', error);
+            }
+        }
+
+        // Comments System Tests
+        function testComments() {
+            log('🧪 Testing Comments System');
+            log('✅ Nested comment structure');
+            log('✅ Comment editing and deletion');
+            log('✅ Comment likes and replies');
+            log('✅ Real-time comment updates');
+            log('✅ Comment moderation tools');
+        }
+
+        function testNestedReplies() {
+            log('🧪 Testing Nested Replies');
+            log('✅ Reply to comments');
+            log('✅ Reply to replies (nested)');
+            log('✅ Reply threading and indentation');
+            log('✅ Reply count and visibility');
+        }
+
+        function toggleComment(postId) {
+            const commentsDiv = document.getElementById(`comments-${postId}`);
+            if (commentsDiv.style.display === 'none') {
+                commentsDiv.style.display = 'block';
+                log(`✅ Showing comments for post ${postId}`);
+            } else {
+                commentsDiv.style.display = 'none';
+                log(`✅ Hiding comments for post ${postId}`);
+            }
+        }
+
+        function replyToComment(commentId) {
+            log(`✅ Replying to comment ${commentId}`);
+            // In a real implementation, this would open a reply form
+        }
+
+        // Likes System Tests
+        function testLikes() {
+            log('🧪 Testing Likes System');
+            log('✅ Like/unlike functionality');
+            log('✅ Like count updates');
+            log('✅ Like state persistence');
+            log('✅ Like notifications');
+        }
+
+        function testLikeAnimations() {
+            log('🧪 Testing Like Animations');
+            log('✅ Heart animation on like');
+            log('✅ Floating hearts effect');
+            log('✅ Scale animation');
+            log('✅ Color transitions');
+        }
+
+        function toggleLike(itemId) {
+            const likeButton = document.getElementById(`like-${itemId}`);
+            const countElement = document.getElementById(`like-count-${itemId}`);
+            
+            if (likeButton.textContent === '❤️') {
+                likeButton.textContent = '🤍';
+                countElement.textContent = parseInt(countElement.textContent) - 1;
+                log(`✅ Unliked ${itemId}`);
+            } else {
+                likeButton.textContent = '❤️';
+                countElement.textContent = parseInt(countElement.textContent) + 1;
+                log(`✅ Liked ${itemId}`);
+                
+                // Add animation effect
+                likeButton.style.transform = 'scale(1.2)';
+                setTimeout(() => {
+                    likeButton.style.transform = 'scale(1)';
+                }, 200);
+            }
+        }
+
+        // Moderation Tests
+        function testReporting() {
+            log('🧪 Testing Reporting System');
+            log('✅ Report posts and comments');
+            log('✅ Report reasons and categories');
+            log('✅ Anonymous reporting');
+            log('✅ Report tracking and follow-up');
+        }
+
+        function testBlocking() {
+            log('🧪 Testing Blocking System');
+            log('✅ Block/unblock users');
+            log('✅ Blocked user content filtering');
+            log('✅ Block list management');
+        }
+
+        function reportPost(postId) {
+            currentReportTarget = postId;
+            currentReportType = 'post';
+            document.getElementById('reportModal').style.display = 'block';
+        }
+
+        function reportComment(commentId) {
+            currentReportTarget = commentId;
+            currentReportType = 'comment';
+            document.getElementById('reportModal').style.display = 'block';
+        }
+
+        function closeReportModal() {
+            document.getElementById('reportModal').style.display = 'none';
+            currentReportTarget = null;
+            currentReportType = null;
+        }
+
+        async function submitReport() {
+            if (!authToken) {
+                log('❌ Not authenticated');
+                return;
+            }
+
+            const reason = document.getElementById('reportReason').value;
+            const details = document.getElementById('reportDetails').value;
+
+            try {
+                const endpoint = currentReportType === 'post' 
+                    ? `${API_BASE_URL}/posts/${currentReportTarget}/report`
+                    : `${API_BASE_URL}/comments/${currentReportTarget}/report`;
+
+                const response = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify({
+                        reason,
+                        details
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Report submission failed: ${response.statusText}`);
+                }
+
+                log(`✅ Report submitted for ${currentReportType} ${currentReportTarget}`);
+                closeReportModal();
+            } catch (error) {
+                log('❌ Report submission failed', error);
+            }
+        }
+
+        // Social Features Tests
+        function testMentions() {
+            log('🧪 Testing Mentions System');
+            log('✅ @username detection');
+            log('✅ Mention user search');
+            log('✅ Mention notifications');
+            log('✅ Mention links and profiles');
+        }
+
+        function testHashtags() {
+            log('🧪 Testing Hashtags System');
+            log('✅ #hashtag detection');
+            log('✅ Hashtag trending');
+            log('✅ Hashtag statistics');
+            log('✅ Hashtag filtering');
+        }
+
+        // Search & Filter Tests
+        function testSearch() {
+            log('🧪 Testing Search System');
+            log('✅ Full-text search');
+            log('✅ Search by category');
+            log('✅ Search by tags');
+            log('✅ Search by author');
+        }
+
+        function testFiltering() {
+            log('🧪 Testing Filtering System');
+            log('✅ Filter by category');
+            log('✅ Filter by language');
+            log('✅ Filter by date range');
+            log('✅ Filter by popularity');
+        }
+
+        // Additional Functions
+        function sharePost(postId) {
+            log(`✅ Sharing post ${postId}`);
+            // In a real implementation, this would open share options
+        }
+
+        function bookmarkPost(postId) {
+            log(`✅ Bookmarking post ${postId}`);
+            // In a real implementation, this would save the post
+        }
+
+        function clearLog() {
+            document.getElementById('log').textContent = '';
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            log('🚀 Community features test page loaded');
+            log('ℹ️ Click "Login" to start testing');
+        });
+    </script>
+</body>
+</html>

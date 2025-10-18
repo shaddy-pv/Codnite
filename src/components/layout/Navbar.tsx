@@ -1,104 +1,273 @@
-import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
-import { Bell, Search, Moon, Sun, Menu } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { Search, Moon, Sun, Menu, LogOut, Bell, User, ChevronDown, Settings, Award } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
 import Avatar from '../ui/Avatar';
-const Navbar: React.FC = () => {
-  const {
-    isDarkMode,
-    toggleTheme
-  } = useTheme();
-  const [showNotifications, setShowNotifications] = useState(false);
-  const notifications = [{
-    id: 1,
-    type: 'challenge',
-    message: 'New challenge: 30-min coding battle',
-    time: '2m ago'
-  }, {
-    id: 2,
-    type: 'rank',
-    message: 'Your college rank improved to #3',
-    time: '1h ago'
-  }, {
-    id: 3,
-    type: 'mention',
-    message: 'Alex mentioned you in a comment',
-    time: '3h ago'
-  }];
-  return <header className="border-b border-dark-600 bg-dark-700 py-3 px-4">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center">
-          <Link to="/" className="flex items-center mr-6">
-            <div className="bg-gradient-to-r from-primary-blue to-primary-purple rounded-lg h-8 w-8 flex items-center justify-center mr-2">
-              <span className="text-white font-bold">C</span>
+import { Button } from '../ui/Button';
+import { Input } from '../ui/Input';
+import NotificationBell from '../NotificationBell';
+import { api } from '../../services/api';
+
+interface NavbarProps {
+  user?: any;
+  onLogout?: () => void;
+}
+
+const Navbar: React.FC<NavbarProps> = ({ user, onLogout }) => {
+  const { isDarkMode, toggleTheme } = useTheme();
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
+  const [userPoints, setUserPoints] = useState<number>(0);
+  const navigate = useNavigate();
+
+  // Fetch user points when component mounts or user changes
+  useEffect(() => {
+    if (user?.id) {
+      fetchUserPoints();
+    }
+  }, [user?.id]);
+
+  const fetchUserPoints = async () => {
+    try {
+      const userData = await api.getMe();
+      setUserPoints(userData.points || 0);
+    } catch (error) {
+      console.error('Error fetching user points:', error);
+      setUserPoints(0);
+    }
+  };
+
+  const formatPoints = (points: number) => {
+    if (points >= 1000) {
+      return `${(points / 1000).toFixed(1)}k`;
+    }
+    return points.toString();
+  };
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (searchQuery.trim()) {
+      navigate(`/search?q=${encodeURIComponent(searchQuery.trim())}&type=users`);
+      setSearchQuery('');
+    }
+  };
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (isProfileDropdownOpen && !(event.target as Element).closest('.profile-dropdown')) {
+        setIsProfileDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isProfileDropdownOpen]);
+
+  return (
+    <header className="sticky top-0 z-50 border-b border-neutral-200 dark:border-neutral-700 bg-white/80 dark:bg-neutral-900/80 backdrop-blur-md">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex items-center justify-between h-16">
+          {/* Logo */}
+          <div className="flex items-center">
+            <Link to="/" className="flex items-center space-x-3 group">
+              <div className="bg-gradient-to-r from-primary-600 to-secondary-600 rounded-xl h-9 w-9 flex items-center justify-center shadow-lg group-hover:shadow-glow transition-all duration-300">
+                <span className="text-white font-bold text-lg">C</span>
+              </div>
+              <span className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary-600 to-secondary-600">
+                Codnite
+              </span>
+            </Link>
+          </div>
+
+          {/* Desktop Search */}
+          <div className="hidden md:flex flex-1 max-w-lg mx-8">
+            <div className="relative w-full">
+              <form onSubmit={handleSearch} className="relative w-full">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <Search className="h-5 w-5 text-neutral-400" />
+                </div>
+                <input 
+                  type="text" 
+                  placeholder="Search users..." 
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2.5 border border-neutral-300 dark:border-neutral-600 rounded-xl bg-neutral-50 dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all duration-200"
+                />
+              </form>
             </div>
-            <span className="text-lg font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary-blue to-primary-purple">
-              Codnite
-            </span>
-          </Link>
-          <div className="hidden md:flex relative rounded-full bg-dark-600 px-3 py-1.5 w-64">
-            <Search className="h-5 w-5 text-dark-300" />
-            <input type="text" placeholder="Search problems, people..." className="bg-transparent border-none outline-none text-dark-100 ml-2 w-full" />
           </div>
-        </div>
-        <div className="flex items-center space-x-4">
-          <div className="bg-dark-600 rounded-full px-3 py-1 flex items-center">
-            <span className="text-primary-blue font-medium mr-1">2.4k</span>
-            <span className="text-dark-300 text-sm">points</span>
-          </div>
-          <div className="relative">
-            <button onClick={() => setShowNotifications(!showNotifications)} className="relative p-2 rounded-full hover:bg-dark-600 transition-colors">
-              <Bell className="h-5 w-5 text-dark-200" />
-              <span className="absolute top-1 right-1 bg-primary-purple h-2 w-2 rounded-full"></span>
+
+          {/* Desktop Actions */}
+          <div className="hidden md:flex items-center space-x-4">
+            {/* Points Display */}
+            <div className="bg-gradient-to-r from-primary-50 to-secondary-50 dark:from-primary-900/20 dark:to-secondary-900/20 rounded-xl px-4 py-2 border border-primary-200 dark:border-primary-700">
+              <div className="flex items-center space-x-2">
+                <Award className="w-4 h-4 text-primary-600 dark:text-primary-400" />
+                <span className="text-primary-600 dark:text-primary-400 font-semibold text-sm">
+                  {formatPoints(userPoints)} points
+                </span>
+              </div>
+            </div>
+            
+            {/* Notifications */}
+            <NotificationBell className="text-neutral-600 dark:text-neutral-400 hover:text-primary-600 dark:hover:text-primary-400 transition-colors duration-200" />
+            
+            {/* Theme Toggle */}
+            <button 
+              onClick={toggleTheme} 
+              className="p-2 rounded-xl hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors duration-200 group"
+              aria-label="Toggle theme"
+            >
+              {isDarkMode ? (
+                <Sun className="h-5 w-5 text-neutral-600 dark:text-neutral-400 group-hover:text-warning-500 transition-colors duration-200" />
+              ) : (
+                <Moon className="h-5 w-5 text-neutral-600 dark:text-neutral-400 group-hover:text-primary-500 transition-colors duration-200" />
+              )}
             </button>
-            {showNotifications && <div className="absolute right-0 mt-2 w-80 bg-dark-600 rounded-lg shadow-lg border border-dark-500 z-10 animate-fade-in">
-                <div className="p-3 border-b border-dark-500">
-                  <h3 className="font-medium">Notifications</h3>
-                </div>
-                <div className="max-h-80 overflow-y-auto">
-                  {notifications.map(notification => <div key={notification.id} className="p-3 hover:bg-dark-500 cursor-pointer border-b border-dark-500">
-                      <div className="flex">
-                        <div className="mr-3">
-                          {notification.type === 'challenge' && <div className="bg-primary-blue bg-opacity-20 p-2 rounded-full">
-                              <span className="text-primary-blue text-xs">
-                                🏆
-                              </span>
-                            </div>}
-                          {notification.type === 'rank' && <div className="bg-primary-purple bg-opacity-20 p-2 rounded-full">
-                              <span className="text-primary-purple text-xs">
-                                📈
-                              </span>
-                            </div>}
-                          {notification.type === 'mention' && <div className="bg-primary-cyan bg-opacity-20 p-2 rounded-full">
-                              <span className="text-primary-cyan text-xs">
-                                💬
-                              </span>
-                            </div>}
-                        </div>
-                        <div>
-                          <p className="text-sm">{notification.message}</p>
-                          <p className="text-dark-300 text-xs">
-                            {notification.time}
-                          </p>
-                        </div>
+
+            {/* User Menu */}
+            {user ? (
+              <div className="relative profile-dropdown">
+                <button
+                  onClick={() => setIsProfileDropdownOpen(!isProfileDropdownOpen)}
+                  className="flex items-center space-x-2 p-2 rounded-xl hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors duration-200 group"
+                >
+                  <Avatar 
+                    src={user.avatarUrl || "/default-avatar.svg"} 
+                    alt={user.name}
+                    size="sm" 
+                    status="online"
+                    className="group-hover:ring-2 group-hover:ring-primary-500 transition-all duration-200"
+                  />
+                  <ChevronDown className={`w-4 h-4 text-neutral-400 transition-transform duration-200 ${isProfileDropdownOpen ? 'rotate-180' : ''}`} />
+                </button>
+
+                {/* Profile Dropdown - Fixed positioning */}
+                {isProfileDropdownOpen && (
+                  <div className="absolute top-full right-0 mt-2 w-64 bg-white dark:bg-neutral-800 rounded-xl shadow-lg border border-neutral-200 dark:border-neutral-700 py-2 z-50 animate-in slide-in-from-top-2 duration-200">
+                    <div className="px-4 py-3 border-b border-neutral-200 dark:border-neutral-700">
+                      <p className="font-semibold text-neutral-900 dark:text-neutral-100">{user.name}</p>
+                      <p className="text-sm text-neutral-500 dark:text-neutral-400">@{user.username}</p>
+                      <div className="flex items-center mt-2">
+                        <Award className="w-4 h-4 text-primary-600 dark:text-primary-400 mr-1" />
+                        <span className="text-sm text-primary-600 dark:text-primary-400 font-medium">
+                          {formatPoints(userPoints)} points
+                        </span>
                       </div>
-                    </div>)}
-                </div>
-                <div className="p-2 text-center border-t border-dark-500">
-                  <Link to="/notifications" className="text-primary-blue text-sm">
-                    View all
-                  </Link>
-                </div>
-              </div>}
+                    </div>
+                    
+                    <div className="py-2">
+                      <Link
+                        to={`/profile/${user.id}`}
+                        className="flex items-center px-4 py-2 text-sm text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors duration-200"
+                        onClick={() => setIsProfileDropdownOpen(false)}
+                      >
+                        <User className="w-4 h-4 mr-3" />
+                        View Profile
+                      </Link>
+                      
+                      <Link
+                        to="/settings"
+                        className="flex items-center px-4 py-2 text-sm text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors duration-200"
+                        onClick={() => setIsProfileDropdownOpen(false)}
+                      >
+                        <Settings className="w-4 h-4 mr-3" />
+                        Settings
+                      </Link>
+                    </div>
+                    
+                    <div className="border-t border-neutral-200 dark:border-neutral-700 pt-2">
+                      <button
+                        onClick={() => {
+                          setIsProfileDropdownOpen(false);
+                          onLogout?.();
+                        }}
+                        className="flex items-center w-full px-4 py-2 text-sm text-error-600 dark:text-error-400 hover:bg-error-50 dark:hover:bg-error-900/20 transition-colors duration-200"
+                      >
+                        <LogOut className="w-4 h-4 mr-3" />
+                        Logout
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="text-neutral-500 dark:text-neutral-400 text-sm">
+                Welcome to Codnite
+              </div>
+            )}
           </div>
-          <button onClick={toggleTheme} className="p-2 rounded-full hover:bg-dark-600 transition-colors">
-            {isDarkMode ? <Sun className="h-5 w-5 text-dark-200" /> : <Moon className="h-5 w-5 text-dark-200" />}
-          </button>
-          <Link to="/profile/me">
-            <Avatar src="https://images.unsplash.com/photo-1568602471122-7832951cc4c5?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=facearea&facepad=2&w=300&h=300&q=80" size="sm" status="online" />
-          </Link>
+
+          {/* Mobile Menu Button */}
+          <div className="md:hidden flex items-center space-x-2">
+            <NotificationBell className="text-neutral-600 dark:text-neutral-400" />
+            <button
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              className="p-2 rounded-xl hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors duration-200"
+              aria-label="Toggle mobile menu"
+            >
+              <Menu className="h-6 w-6 text-neutral-600 dark:text-neutral-400" />
+            </button>
+          </div>
         </div>
+
+        {/* Mobile Menu */}
+        {isMobileMenuOpen && (
+          <div className="md:hidden border-t border-neutral-200 dark:border-neutral-700 py-4 space-y-4 animate-slide-down">
+            {/* Mobile Search */}
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <Search className="h-5 w-5 text-neutral-400" />
+              </div>
+              <input 
+                type="text" 
+                placeholder="Search users..." 
+                className="w-full pl-10 pr-4 py-2.5 border border-neutral-300 dark:border-neutral-600 rounded-xl bg-neutral-50 dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all duration-200"
+              />
+            </div>
+
+            {/* Mobile Actions */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-4">
+                <button 
+                  onClick={toggleTheme} 
+                  className="p-2 rounded-xl hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors duration-200"
+                  aria-label="Toggle theme"
+                >
+                  {isDarkMode ? (
+                    <Sun className="h-5 w-5 text-neutral-600 dark:text-neutral-400" />
+                  ) : (
+                    <Moon className="h-5 w-5 text-neutral-600 dark:text-neutral-400" />
+                  )}
+                </button>
+                
+                {user && (
+                  <Link to={`/profile/${user.id}`} className="p-2 rounded-xl hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors duration-200">
+                    <User className="h-5 w-5 text-neutral-600 dark:text-neutral-400" />
+                  </Link>
+                )}
+              </div>
+
+              {user && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={onLogout}
+                  leftIcon={<LogOut className="h-4 w-4" />}
+                >
+                  Logout
+                </Button>
+              )}
+            </div>
+          </div>
+        )}
       </div>
-    </header>;
+    </header>
+  );
 };
+
 export default Navbar;

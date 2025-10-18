@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Codnite File Upload Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        .button:hover {
+            background: #0056b3;
+        }
+        .button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .button.danger {
+            background: #dc3545;
+        }
+        .button.danger:hover {
+            background: #c82333;
+        }
+        .status {
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .status.info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        .upload-area {
+            border: 2px dashed #ccc;
+            border-radius: 8px;
+            padding: 40px;
+            text-align: center;
+            margin: 20px 0;
+            transition: border-color 0.3s;
+        }
+        .upload-area.dragover {
+            border-color: #007bff;
+            background-color: #f8f9fa;
+        }
+        .preview {
+            max-width: 200px;
+            max-height: 200px;
+            border-radius: 8px;
+            margin: 10px 0;
+        }
+        .progress {
+            width: 100%;
+            height: 20px;
+            background-color: #f0f0f0;
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+        .progress-bar {
+            height: 100%;
+            background-color: #007bff;
+            transition: width 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 12px;
+        }
+        .config-info {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 15px;
+            margin: 10px 0;
+        }
+        .log {
+            background: #f8f9fa;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 10px;
+            height: 200px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <h1>📁 Codnite File Upload System Test</h1>
+    
+    <div class="container">
+        <h2>Authentication</h2>
+        <div id="authStatus" class="status info">Not authenticated</div>
+        <button class="button" onclick="login()">Login</button>
+        <button class="button" onclick="logout()">Logout</button>
+    </div>
+
+    <div class="container">
+        <h2>Upload Configuration</h2>
+        <div id="configStatus" class="status info">Not loaded</div>
+        <button class="button" onclick="loadConfig()">Load Config</button>
+        <div id="configInfo" class="config-info" style="display: none;"></div>
+    </div>
+
+    <div class="container">
+        <h2>Avatar Upload</h2>
+        <div id="currentAvatar" class="status info">No current avatar</div>
+        
+        <div class="upload-area" id="uploadArea">
+            <p>Drag and drop an image here, or</p>
+            <input type="file" id="fileInput" accept="image/*" style="display: none;">
+            <button class="button" onclick="document.getElementById('fileInput').click()">Browse Files</button>
+            <p style="font-size: 12px; color: #666; margin-top: 10px;">
+                Supported formats: JPEG, PNG, WebP<br>
+                Max size: <span id="maxSize">5MB</span>
+            </p>
+        </div>
+
+        <div id="preview" style="display: none;">
+            <h3>Preview</h3>
+            <img id="previewImage" class="preview" alt="Preview">
+            <div>
+                <button class="button" onclick="uploadAvatar()">Upload Avatar</button>
+                <button class="button" onclick="cancelUpload()">Cancel</button>
+            </div>
+        </div>
+
+        <div id="uploadProgress" style="display: none;">
+            <h3>Upload Progress</h3>
+            <div class="progress">
+                <div class="progress-bar" id="progressBar" style="width: 0%;">0%</div>
+            </div>
+        </div>
+
+        <div>
+            <button class="button danger" onclick="deleteAvatar()">Delete Current Avatar</button>
+            <button class="button" onclick="getAvatarInfo()">Get Avatar Info</button>
+        </div>
+    </div>
+
+    <div class="container">
+        <h2>Test Log</h2>
+        <div id="log" class="log"></div>
+        <button class="button" onclick="clearLog()">Clear Log</button>
+    </div>
+
+    <script>
+        const API_BASE_URL = 'http://localhost:5000/api';
+        
+        let authToken = '';
+        let userId = '';
+        let uploadConfig = null;
+        let selectedFile = null;
+
+        // Utility functions
+        function log(message, data = null) {
+            const timestamp = new Date().toLocaleTimeString();
+            const logElement = document.getElementById('log');
+            const logEntry = `[${timestamp}] ${message}${data ? '\n' + JSON.stringify(data, null, 2) : ''}\n`;
+            logElement.textContent += logEntry;
+            logElement.scrollTop = logElement.scrollHeight;
+            console.log(message, data);
+        }
+
+        function updateStatus(elementId, message, type = 'info') {
+            const element = document.getElementById(elementId);
+            element.textContent = message;
+            element.className = `status ${type}`;
+        }
+
+        // Authentication functions
+        async function login() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/auth/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        email: 'test@example.com',
+                        password: 'testpassword123'
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Login failed: ${response.statusText}`);
+                }
+
+                const data = await response.json();
+                authToken = data.token;
+                userId = data.user.id;
+                
+                updateStatus('authStatus', 'Authenticated successfully', 'success');
+                log('✅ Login successful', { userId });
+                
+                // Auto-load config after login
+                loadConfig();
+                getAvatarInfo();
+            } catch (error) {
+                updateStatus('authStatus', `Login failed: ${error.message}`, 'error');
+                log('❌ Login failed', error);
+            }
+        }
+
+        function logout() {
+            authToken = '';
+            userId = '';
+            updateStatus('authStatus', 'Not authenticated', 'info');
+            updateStatus('configStatus', 'Not loaded', 'info');
+            updateStatus('currentAvatar', 'No current avatar', 'info');
+            document.getElementById('configInfo').style.display = 'none';
+            log('👋 Logged out');
+        }
+
+        // Configuration functions
+        async function loadConfig() {
+            if (!authToken) {
+                log('❌ Cannot load config: not authenticated');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/upload/config`, {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Config load failed: ${response.statusText}`);
+                }
+
+                const data = await response.json();
+                uploadConfig = data.config;
+                
+                updateStatus('configStatus', 'Configuration loaded', 'success');
+                
+                const configInfo = document.getElementById('configInfo');
+                configInfo.innerHTML = `
+                    <h4>Upload Configuration</h4>
+                    <p><strong>Max File Size:</strong> ${uploadConfig.maxFileSizeMB}MB</p>
+                    <p><strong>Allowed Types:</strong> ${uploadConfig.allowedTypes.join(', ')}</p>
+                    <p><strong>Storage Type:</strong> ${uploadConfig.storageType}</p>
+                    <p><strong>S3 Configured:</strong> ${uploadConfig.s3Configured ? 'Yes' : 'No'}</p>
+                `;
+                configInfo.style.display = 'block';
+                
+                document.getElementById('maxSize').textContent = `${uploadConfig.maxFileSizeMB}MB`;
+                
+                log('✅ Configuration loaded', uploadConfig);
+            } catch (error) {
+                updateStatus('configStatus', `Config load failed: ${error.message}`, 'error');
+                log('❌ Config load failed', error);
+            }
+        }
+
+        // File handling functions
+        function setupFileHandling() {
+            const uploadArea = document.getElementById('uploadArea');
+            const fileInput = document.getElementById('fileInput');
+
+            // Drag and drop handlers
+            uploadArea.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                uploadArea.classList.add('dragover');
+            });
+
+            uploadArea.addEventListener('dragleave', (e) => {
+                e.preventDefault();
+                uploadArea.classList.remove('dragover');
+            });
+
+            uploadArea.addEventListener('drop', (e) => {
+                e.preventDefault();
+                uploadArea.classList.remove('dragover');
+                
+                const files = e.dataTransfer.files;
+                if (files.length > 0) {
+                    handleFileSelect(files[0]);
+                }
+            });
+
+            // File input handler
+            fileInput.addEventListener('change', (e) => {
+                const files = e.target.files;
+                if (files && files.length > 0) {
+                    handleFileSelect(files[0]);
+                }
+            });
+        }
+
+        function handleFileSelect(file) {
+            if (!uploadConfig) {
+                log('❌ Upload config not loaded');
+                return;
+            }
+
+            // Validate file type
+            if (!uploadConfig.allowedTypes.includes(file.type)) {
+                log('❌ Invalid file type', { type: file.type, allowed: uploadConfig.allowedTypes });
+                return;
+            }
+
+            // Validate file size
+            if (file.size > uploadConfig.maxFileSize) {
+                log('❌ File too large', { size: file.size, maxSize: uploadConfig.maxFileSize });
+                return;
+            }
+
+            selectedFile = file;
+            
+            // Create preview
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const preview = document.getElementById('preview');
+                const previewImage = document.getElementById('previewImage');
+                
+                previewImage.src = e.target.result;
+                preview.style.display = 'block';
+                
+                log('✅ File selected', { 
+                    name: file.name, 
+                    size: file.size, 
+                    type: file.type 
+                });
+            };
+            reader.readAsDataURL(file);
+        }
+
+        async function uploadAvatar() {
+            if (!selectedFile || !authToken) {
+                log('❌ No file selected or not authenticated');
+                return;
+            }
+
+            try {
+                const formData = new FormData();
+                formData.append('avatar', selectedFile);
+
+                // Show progress
+                const progressDiv = document.getElementById('uploadProgress');
+                const progressBar = document.getElementById('progressBar');
+                progressDiv.style.display = 'block';
+
+                // Simulate progress
+                let progress = 0;
+                const progressInterval = setInterval(() => {
+                    progress += 10;
+                    progressBar.style.width = `${progress}%`;
+                    progressBar.textContent = `${progress}%`;
+                    
+                    if (progress >= 90) {
+                        clearInterval(progressInterval);
+                    }
+                }, 200);
+
+                const response = await fetch(`${API_BASE_URL}/upload/avatar`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: formData
+                });
+
+                clearInterval(progressInterval);
+                progressBar.style.width = '100%';
+                progressBar.textContent = '100%';
+
+                if (!response.ok) {
+                    throw new Error(`Upload failed: ${response.statusText}`);
+                }
+
+                const data = await response.json();
+                
+                if (data.success) {
+                    log('✅ Avatar uploaded successfully', data);
+                    updateStatus('currentAvatar', `Current avatar: ${data.avatarUrl}`, 'success');
+                    
+                    // Hide progress and preview
+                    setTimeout(() => {
+                        progressDiv.style.display = 'none';
+                        document.getElementById('preview').style.display = 'none';
+                        selectedFile = null;
+                    }, 1000);
+                } else {
+                    throw new Error(data.error || 'Upload failed');
+                }
+            } catch (error) {
+                log('❌ Upload failed', error);
+                document.getElementById('uploadProgress').style.display = 'none';
+            }
+        }
+
+        function cancelUpload() {
+            selectedFile = null;
+            document.getElementById('preview').style.display = 'none';
+            document.getElementById('uploadProgress').style.display = 'none';
+            document.getElementById('fileInput').value = '';
+            log('🔄 Upload cancelled');
+        }
+
+        async function deleteAvatar() {
+            if (!authToken) {
+                log('❌ Not authenticated');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/upload/avatar`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Delete failed: ${response.statusText}`);
+                }
+
+                const data = await response.json();
+                
+                if (data.success) {
+                    log('✅ Avatar deleted successfully', data);
+                    updateStatus('currentAvatar', `Current avatar: ${data.avatarUrl}`, 'success');
+                } else {
+                    throw new Error(data.error || 'Delete failed');
+                }
+            } catch (error) {
+                log('❌ Delete failed', error);
+            }
+        }
+
+        async function getAvatarInfo() {
+            if (!authToken) {
+                log('❌ Not authenticated');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/upload/avatar`, {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Get avatar info failed: ${response.statusText}`);
+                }
+
+                const data = await response.json();
+                
+                if (data.success) {
+                    log('✅ Avatar info retrieved', data);
+                    updateStatus('currentAvatar', 
+                        `Current avatar: ${data.avatarUrl} (${data.isDefault ? 'Default' : 'Custom'})`, 
+                        'success'
+                    );
+                } else {
+                    throw new Error(data.error || 'Get avatar info failed');
+                }
+            } catch (error) {
+                log('❌ Get avatar info failed', error);
+            }
+        }
+
+        function clearLog() {
+            document.getElementById('log').textContent = '';
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            log('🚀 File upload test page loaded');
+            log('ℹ️ Click "Login" to start testing');
+            setupFileHandling();
+        });
+    </script>
+</body>
+</html>

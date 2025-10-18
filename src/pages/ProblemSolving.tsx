@@ -1,256 +1,462 @@
-import React, { useState } from 'react';
-import { useParams } from 'react-router-dom';
-import { Play, CheckCircle, XCircle, MessageSquare, ThumbsUp, Save, Share2, ArrowLeft, ArrowRight, Clock } from 'lucide-react';
-import Button from '../components/ui/Button';
+import React, { useState, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { ArrowLeft, ArrowRight, MessageSquare, ThumbsUp, Save, Share2 } from 'lucide-react';
+import { Button } from '../components/ui/Button';
 import Avatar from '../components/ui/Avatar';
 import Badge from '../components/ui/Badge';
+import Loading from '../components/ui/Loading';
+import { EmptyState } from '../components/ui/EmptyState';
+import CodeEditor from '../components/CodeEditor';
+import { api, Problem, ProblemSubmission, executionApi } from '../services/api';
+import { useToast } from '../components/ui/Toast';
 const ProblemSolving: React.FC = () => {
-  const {
-    problemId
-  } = useParams<{
-    problemId: string;
-  }>();
+  const { problemId } = useParams<{ problemId: string }>();
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('description');
   const [selectedLanguage, setSelectedLanguage] = useState('javascript');
-  const [code, setCode] = useState(`function twoSum(nums, target) {
-  const map = new Map();
-  for (let i = 0; i < nums.length; i++) {
-    const complement = target - nums[i];
-    if (map.has(complement)) {
-      return [map.get(complement), i];
-    }
-    map.set(nums[i], i);
-  }
-  return [];
-}`);
-  // Mock problem data
-  const problem = {
-    id: problemId,
-    title: 'Two Sum',
-    difficulty: 'Easy',
-    acceptanceRate: '47%',
-    description: 'Given an array of integers nums and an integer target, return indices of the two numbers such that they add up to target.\n\nYou may assume that each input would have exactly one solution, and you may not use the same element twice.\n\nYou can return the answer in any order.',
-    examples: [{
-      input: 'nums = [2,7,11,15], target = 9',
-      output: '[0,1]',
-      explanation: 'Because nums[0] + nums[1] == 9, we return [0, 1].'
-    }, {
-      input: 'nums = [3,2,4], target = 6',
-      output: '[1,2]',
-      explanation: 'Because nums[1] + nums[2] == 6, we return [1, 2].'
-    }, {
-      input: 'nums = [3,3], target = 6',
-      output: '[0,1]',
-      explanation: 'Because nums[0] + nums[1] == 6, we return [0, 1].'
-    }],
-    constraints: ['2 <= nums.length <= 10^4', '-10^9 <= nums[i] <= 10^9', '-10^9 <= target <= 10^9', 'Only one valid answer exists.'],
-    tags: ['Array', 'Hash Table'],
-    companies: ['Amazon', 'Google', 'Facebook', 'Microsoft'],
-    submissions: {
-      total: 12458,
-      accepted: 5845,
-      rate: '47%'
+  const [code, setCode] = useState('');
+  const [problem, setProblem] = useState<Problem | null>(null);
+  const [submissions, setSubmissions] = useState<ProblemSubmission[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isRunning, setIsRunning] = useState(false);
+  const [result, setResult] = useState<any>(null);
+  const { addToast } = useToast();
+
+  // Load problem data
+  const loadProblem = async () => {
+    if (!problemId) return;
+    
+    try {
+      setIsLoading(true);
+      const [problemData, submissionsData] = await Promise.all([
+        api.getProblem(problemId),
+        api.getProblemSubmissions(problemId)
+      ]);
+      
+      setProblem(problemData);
+      setSubmissions(submissionsData);
+      
+      // Set default code based on language
+      if (submissionsData.length > 0) {
+        const lastSubmission = submissionsData[0];
+        setCode(lastSubmission.code);
+        setSelectedLanguage(lastSubmission.language);
+      } else {
+        setDefaultCode();
+      }
+    } catch (err: any) {
+      addToast('Failed to load problem', 'error');
+    } finally {
+      setIsLoading(false);
     }
   };
-  const discussions = [{
-    id: 1,
-    author: {
-      name: 'Alex Johnson',
-      username: 'alexj',
-      avatar: 'https://images.unsplash.com/photo-1599566150163-29194dcaad36?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=facearea&facepad=2&w=300&h=300&q=80'
-    },
-    content: 'This is a classic problem that can be solved in O(n) time using a hash map. The key insight is to check if the complement (target - current number) exists in the map as we iterate through the array.',
-    likes: 42,
-    time: '2 days ago',
-    replies: 5
-  }, {
-    id: 2,
-    author: {
-      name: 'Sophia Chen',
-      username: 'sophiac',
-      avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=facearea&facepad=2&w=300&h=300&q=80'
-    },
-    content: 'You can also solve this with a brute force approach using two nested loops, but that would be O(n²) time complexity. The hash map approach is much more efficient.',
-    likes: 28,
-    time: '1 day ago',
-    replies: 2
-  }];
-  return <div className="max-w-screen-xl mx-auto">
+
+  // Set default code based on language
+  const setDefaultCode = () => {
+    const defaultCodes = {
+      javascript: `function solution(input) {
+  // Your code here
+  return input;
+}`,
+      python: `def solution(input):
+    # Your code here
+    return input`,
+      java: `public class Solution {
+    public Object solution(Object input) {
+        // Your code here
+        return input;
+    }
+}`,
+      cpp: `#include <iostream>
+using namespace std;
+
+int solution(int input) {
+    // Your code here
+    return input;
+}`
+    };
+    
+    setCode(defaultCodes[selectedLanguage as keyof typeof defaultCodes] || defaultCodes.javascript);
+  };
+
+  // Load problem on mount
+  useEffect(() => {
+    loadProblem();
+  }, [problemId]);
+
+  // Update code when language changes
+  useEffect(() => {
+    if (!submissions.length) {
+      setDefaultCode();
+    }
+  }, [selectedLanguage]);
+
+  // Handle code submission
+  const handleSubmit = async () => {
+    if (!problemId || !code.trim()) {
+      addToast('Please write some code before submitting', 'warning');
+      return;
+    }
+
+    try {
+      setIsSubmitting(true);
+      
+      // First, execute the code to get results
+      const executionResult = await executionApi.testCode(code, selectedLanguage);
+      
+      // Create submission data with execution results
+      const submissionData = {
+        code: code.trim(),
+        language: selectedLanguage,
+        status: executionResult.success ? 'accepted' : 'runtime_error',
+        runtime: executionResult.executionTime,
+        memory: 0, // Not available from current execution service
+        testCasesPassed: executionResult.success ? 1 : 0,
+        totalTestCases: 1,
+        output: executionResult.output,
+        error: executionResult.error
+      };
+      
+      // Submit to backend (this will save to database)
+      const submission = await api.submitProblemSolution(problemId, submissionData);
+      
+      // Update local state with the submission
+      const fullSubmission = {
+        ...submission,
+        code: submissionData.code,
+        language: submissionData.language,
+        output: submissionData.output,
+        error: submissionData.error
+      };
+      
+      setResult(fullSubmission);
+      setSubmissions(prev => [fullSubmission, ...prev]);
+      
+      if (submission.status === 'accepted') {
+        addToast('Solution accepted! 🎉', 'success');
+      } else {
+        addToast(`Solution ${submission.status.replace('_', ' ')}`, 'warning');
+      }
+    } catch (err: any) {
+      console.error('Submission error:', err);
+      addToast('Failed to submit solution', 'error');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // Handle code execution (run)
+  const handleRun = async () => {
+    if (!code.trim()) {
+      addToast('Please write some code before running', 'warning');
+      return;
+    }
+
+    try {
+      setIsRunning(true);
+      
+      // Use the real code execution engine
+      const executionResult = await executionApi.testCode(code, selectedLanguage);
+      
+      // Convert execution result to problem result format
+      const problemResult = {
+        status: executionResult.success ? 'accepted' : 'runtime_error',
+        runtime: executionResult.executionTime,
+        memory: 0, // Not available from current execution service
+        testCasesPassed: executionResult.success ? 1 : 0,
+        totalTestCases: 1,
+        output: executionResult.output,
+        error: executionResult.error
+      };
+      
+      setResult(problemResult);
+      
+      if (executionResult.success) {
+        addToast('Code executed successfully!', 'success');
+      } else {
+        addToast(`Execution failed: ${executionResult.error}`, 'error');
+      }
+    } catch (err: any) {
+      console.error('Code execution error:', err);
+      addToast('Failed to run code', 'error');
+      setResult({
+        status: 'runtime_error',
+        runtime: 0,
+        memory: 0,
+        testCasesPassed: 0,
+        totalTestCases: 1,
+        output: '',
+        error: err.response?.data?.error || 'Unknown error'
+      });
+    } finally {
+      setIsRunning(false);
+    }
+  };
+
+  // Handle save code
+  const handleSave = async () => {
+    // In a real implementation, this would save to localStorage or backend
+    localStorage.setItem(`problem_${problemId}_code`, code);
+    localStorage.setItem(`problem_${problemId}_language`, selectedLanguage);
+    addToast('Code saved locally', 'success');
+  };
+
+  const getDifficultyColor = (difficulty: string) => {
+    switch (difficulty.toLowerCase()) {
+      case 'easy':
+        return 'green';
+      case 'medium':
+        return 'yellow';
+      case 'hard':
+        return 'red';
+      default:
+        return 'blue';
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="max-w-screen-xl mx-auto">
+        <Loading text="Loading problem..." />
+      </div>
+    );
+  }
+
+  if (!problem) {
+    return (
+      <div className="max-w-screen-xl mx-auto">
+        <EmptyState
+          title="Problem not found"
+          description="The problem you're looking for doesn't exist or has been removed."
+        />
+      </div>
+    );
+  }
+  return (
+    <div className="max-w-screen-xl mx-auto">
       {/* Problem header */}
       <div className="flex justify-between items-center mb-6">
         <div>
           <div className="flex items-center">
-            <h1 className="text-2xl font-bold mr-3">{problem.title}</h1>
-            <Badge text={problem.difficulty} color={problem.difficulty === 'Easy' ? 'blue' : problem.difficulty === 'Medium' ? 'purple' : 'cyan'} />
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white mr-3">
+              {problem.title}
+            </h1>
+            <Badge 
+              text={problem.difficulty} 
+              color={getDifficultyColor(problem.difficulty)} 
+            />
           </div>
-          <div className="flex items-center text-dark-300 text-sm mt-1">
-            <span>Acceptance: {problem.acceptanceRate}</span>
+          <div className="flex items-center text-gray-500 dark:text-gray-400 text-sm mt-1">
+            <span>Acceptance: {problem.acceptanceRate.toFixed(1)}%</span>
             <span className="mx-2">•</span>
-            <span>Submissions: {problem.submissions.total}</span>
+            <span>Submissions: {problem._count?.submissions || 0}</span>
           </div>
         </div>
         <div className="flex space-x-2">
-          <Button variant="outline" leftIcon={<ArrowLeft className="h-4 w-4" />}>
-            Previous
+          <Button 
+            variant="outline" 
+            leftIcon={<ArrowLeft className="h-4 w-4" />}
+            onClick={() => navigate(-1)}
+          >
+            Back
           </Button>
-          <Button variant="outline" rightIcon={<ArrowRight className="h-4 w-4" />}>
+          <Button 
+            variant="outline" 
+            rightIcon={<ArrowRight className="h-4 w-4" />}
+            onClick={() => navigate(1)}
+          >
             Next
           </Button>
         </div>
       </div>
+
       <div className="flex flex-col lg:flex-row gap-6">
         {/* Left panel - Problem description */}
         <div className="lg:w-1/2">
-          <div className="bg-dark-600 rounded-xl border border-dark-500 overflow-hidden">
-            <div className="flex border-b border-dark-500">
-              <button onClick={() => setActiveTab('description')} className={`flex-1 py-3 px-4 text-center transition-colors ${activeTab === 'description' ? 'border-b-2 border-primary-blue text-primary-blue' : 'text-dark-300 hover:text-dark-100'}`}>
+          <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+            <div className="flex border-b border-gray-200 dark:border-gray-700">
+              <button 
+                onClick={() => setActiveTab('description')} 
+                className={`flex-1 py-3 px-4 text-center transition-colors ${
+                  activeTab === 'description' 
+                    ? 'border-b-2 border-blue-500 text-blue-500' 
+                    : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
+                }`}
+              >
                 Description
               </button>
-              <button onClick={() => setActiveTab('discussion')} className={`flex-1 py-3 px-4 text-center transition-colors ${activeTab === 'discussion' ? 'border-b-2 border-primary-blue text-primary-blue' : 'text-dark-300 hover:text-dark-100'}`}>
-                Discussion
-              </button>
-              <button onClick={() => setActiveTab('solutions')} className={`flex-1 py-3 px-4 text-center transition-colors ${activeTab === 'solutions' ? 'border-b-2 border-primary-blue text-primary-blue' : 'text-dark-300 hover:text-dark-100'}`}>
-                Solutions
+              <button 
+                onClick={() => setActiveTab('submissions')} 
+                className={`flex-1 py-3 px-4 text-center transition-colors ${
+                  activeTab === 'submissions' 
+                    ? 'border-b-2 border-blue-500 text-blue-500' 
+                    : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
+                }`}
+              >
+                Submissions ({submissions.length})
               </button>
             </div>
+            
             <div className="p-6">
-              {activeTab === 'description' && <div className="space-y-6">
+              {activeTab === 'description' && (
+                <div className="space-y-6">
                   <div>
-                    <p className="whitespace-pre-line">{problem.description}</p>
+                    <p className="whitespace-pre-line text-gray-700 dark:text-gray-300">
+                      {problem.description}
+                    </p>
                   </div>
-                  <div>
-                    <h3 className="font-medium mb-2">Examples:</h3>
-                    <div className="space-y-4">
-                      {problem.examples.map((example, index) => <div key={index} className="bg-dark-700 rounded-md p-3">
-                          <div className="mb-1">
-                            <span className="text-dark-300">Input: </span>
-                            <span className="font-mono">{example.input}</span>
-                          </div>
-                          <div className="mb-1">
-                            <span className="text-dark-300">Output: </span>
-                            <span className="font-mono">{example.output}</span>
-                          </div>
-                          {example.explanation && <div>
-                              <span className="text-dark-300">
-                                Explanation:{' '}
-                              </span>
-                              <span>{example.explanation}</span>
-                            </div>}
-                        </div>)}
-                    </div>
-                  </div>
-                  <div>
-                    <h3 className="font-medium mb-2">Constraints:</h3>
-                    <ul className="list-disc list-inside space-y-1">
-                      {problem.constraints.map((constraint, index) => <li key={index} className="font-mono text-sm">
-                          {constraint}
-                        </li>)}
-                    </ul>
-                  </div>
-                  <div>
-                    <h3 className="font-medium mb-2">Companies:</h3>
-                    <div className="flex flex-wrap gap-2">
-                      {problem.companies.map((company, index) => <Badge key={index} text={company} color="gray" />)}
-                    </div>
-                  </div>
-                </div>}
-              {activeTab === 'discussion' && <div className="space-y-6">
-                  <div className="flex justify-between items-center mb-4">
-                    <h3 className="font-medium">
-                      Discussion ({discussions.length})
-                    </h3>
-                    <Button variant="outline" size="sm">
-                      New Post
-                    </Button>
-                  </div>
-                  {discussions.map(discussion => <div key={discussion.id} className="border-b border-dark-500 pb-4 last:border-b-0 last:pb-0">
-                      <div className="flex items-start">
-                        <Avatar src={discussion.author.avatar} size="sm" />
-                        <div className="ml-3 flex-1">
-                          <div className="flex justify-between">
-                            <div>
-                              <span className="font-medium">
-                                {discussion.author.name}
-                              </span>
-                              <span className="text-dark-300 text-sm ml-2">
-                                @{discussion.author.username}
-                              </span>
+                  
+                  {problem.examples && problem.examples.length > 0 && (
+                    <div>
+                      <h3 className="font-medium mb-2 text-gray-900 dark:text-white">Examples:</h3>
+                      <div className="space-y-4">
+                        {problem.examples.map((example, index) => (
+                          <div key={index} className="bg-gray-50 dark:bg-gray-700 rounded-md p-3">
+                            <div className="mb-1">
+                              <span className="text-gray-500 dark:text-gray-400">Input: </span>
+                              <span className="font-mono text-gray-900 dark:text-white">{example.input}</span>
                             </div>
-                            <span className="text-dark-300 text-sm">
-                              {discussion.time}
+                            <div className="mb-1">
+                              <span className="text-gray-500 dark:text-gray-400">Output: </span>
+                              <span className="font-mono text-gray-900 dark:text-white">{example.output}</span>
+                            </div>
+                            {example.explanation && (
+                              <div>
+                                <span className="text-gray-500 dark:text-gray-400">Explanation: </span>
+                                <span className="text-gray-700 dark:text-gray-300">{example.explanation}</span>
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  
+                  {problem.constraints && problem.constraints.length > 0 && (
+                    <div>
+                      <h3 className="font-medium mb-2 text-gray-900 dark:text-white">Constraints:</h3>
+                      <ul className="list-disc list-inside space-y-1">
+                        {problem.constraints.map((constraint, index) => (
+                          <li key={index} className="font-mono text-sm text-gray-700 dark:text-gray-300">
+                            {constraint}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  
+                  {problem.tags && problem.tags.length > 0 && (
+                    <div>
+                      <h3 className="font-medium mb-2 text-gray-900 dark:text-white">Tags:</h3>
+                      <div className="flex flex-wrap gap-2">
+                        {problem.tags.map((tag, index) => (
+                          <Badge key={index} text={tag} color="blue" />
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  
+                  {problem.companies && problem.companies.length > 0 && (
+                    <div>
+                      <h3 className="font-medium mb-2 text-gray-900 dark:text-white">Companies:</h3>
+                      <div className="flex flex-wrap gap-2">
+                        {problem.companies.map((company, index) => (
+                          <Badge key={index} text={company} color="gray" />
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+              
+              {activeTab === 'submissions' && (
+                <div className="space-y-4">
+                  {submissions.length === 0 ? (
+                    <EmptyState
+                      title="No submissions yet"
+                      description="Submit your solution to see it here!"
+                    />
+                  ) : (
+                    submissions.map((submission) => (
+                      <div key={submission.id} className="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center space-x-4">
+                            <Badge text={submission.language} color="blue" />
+                            <span className="text-sm text-gray-500 dark:text-gray-400">
+                              {new Date(submission.createdAt).toLocaleDateString()}
                             </span>
                           </div>
-                          <p className="mt-2">{discussion.content}</p>
-                          <div className="flex items-center mt-2 space-x-4">
-                            <button className="flex items-center text-dark-300 hover:text-primary-blue transition-colors">
-                              <ThumbsUp className="h-4 w-4 mr-1" />
-                              <span className="text-sm">
-                                {discussion.likes}
+                          <div className="flex items-center space-x-2">
+                            {submission.status === 'accepted' ? (
+                              <span className="text-green-500 font-medium">Accepted</span>
+                            ) : (
+                              <span className="text-red-500 font-medium">
+                                {submission.status.replace('_', ' ')}
                               </span>
-                            </button>
-                            <button className="flex items-center text-dark-300 hover:text-primary-blue transition-colors">
-                              <MessageSquare className="h-4 w-4 mr-1" />
-                              <span className="text-sm">
-                                {discussion.replies}
-                              </span>
-                            </button>
+                            )}
                           </div>
                         </div>
+                        
+                        <div className="bg-gray-50 dark:bg-gray-700 rounded p-3 mb-2">
+                          <pre className="text-sm text-gray-900 dark:text-gray-100 overflow-x-auto">
+                            <code>{submission.code}</code>
+                          </pre>
+                        </div>
+                        
+                        <div className="flex items-center justify-between text-sm text-gray-600 dark:text-gray-400 mb-2">
+                          <div className="flex items-center space-x-4">
+                            <span>Runtime: {submission.runtime}ms</span>
+                            <span>Memory: {submission.memory}MB</span>
+                          </div>
+                          <span>
+                            {submission.testCasesPassed}/{submission.totalTestCases} test cases passed
+                          </span>
+                        </div>
+                        
+                        {submission.output && (
+                          <div className="mb-2">
+                            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Output:</span>
+                            <pre className="bg-gray-100 dark:bg-gray-600 rounded p-2 text-sm text-gray-900 dark:text-gray-100 mt-1">
+                              {submission.output}
+                            </pre>
+                          </div>
+                        )}
+                        
+                        {submission.error && (
+                          <div>
+                            <span className="text-sm font-medium text-red-600 dark:text-red-400">Error:</span>
+                            <pre className="bg-red-100 dark:bg-red-900 rounded p-2 text-sm text-red-800 dark:text-red-200 mt-1">
+                              {submission.error}
+                            </pre>
+                          </div>
+                        )}
                       </div>
-                    </div>)}
-                </div>}
-              {activeTab === 'solutions' && <div>
-                  <p className="text-center text-dark-300">
-                    Submit your solution first to view other solutions.
-                  </p>
-                </div>}
+                    ))
+                  )}
+                </div>
+              )}
             </div>
           </div>
         </div>
+        
         {/* Right panel - Code editor */}
         <div className="lg:w-1/2">
-          <div className="bg-dark-600 rounded-xl border border-dark-500 overflow-hidden">
-            <div className="flex justify-between items-center border-b border-dark-500 p-2">
-              <select value={selectedLanguage} onChange={e => setSelectedLanguage(e.target.value)} className="bg-dark-700 border border-dark-500 rounded px-2 py-1 text-sm">
-                <option value="javascript">JavaScript</option>
-                <option value="python">Python</option>
-                <option value="java">Java</option>
-                <option value="cpp">C++</option>
-              </select>
-              <div className="flex items-center space-x-2">
-                <Button variant="outline" size="sm" leftIcon={<Save className="h-4 w-4" />}>
-                  Save
-                </Button>
-                <Button variant="outline" size="sm" leftIcon={<Play className="h-4 w-4" />}>
-                  Run
-                </Button>
-                <Button variant="primary" size="sm" leftIcon={<CheckCircle className="h-4 w-4" />}>
-                  Submit
-                </Button>
-              </div>
-            </div>
-            <div className="p-4 h-[600px] flex flex-col">
-              <div className="flex-1 bg-dark-700 rounded-md p-4 font-mono text-sm overflow-auto">
-                <textarea value={code} onChange={e => setCode(e.target.value)} className="w-full h-full bg-transparent outline-none resize-none" spellCheck="false" />
-              </div>
-              <div className="mt-4 bg-dark-700 rounded-md p-4">
-                <div className="flex items-center">
-                  <div className="h-6 w-6 rounded-full bg-green-500 bg-opacity-20 flex items-center justify-center mr-2">
-                    <CheckCircle className="h-4 w-4 text-green-500" />
-                  </div>
-                  <span className="font-medium text-green-500">Accepted</span>
-                  <div className="ml-auto flex items-center text-dark-300 text-sm">
-                    <Clock className="h-4 w-4 mr-1" />
-                    <span>Runtime: 76 ms (faster than 92%)</span>
-                    <span className="mx-2">•</span>
-                    <span>Memory: 42.1 MB (better than 87%)</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
+          <CodeEditor
+            value={code}
+            onChange={setCode}
+            language={selectedLanguage}
+            onLanguageChange={setSelectedLanguage}
+            onRun={handleRun}
+            onSubmit={handleSubmit}
+            onSave={handleSave}
+            isRunning={isRunning}
+            isSubmitting={isSubmitting}
+            result={result}
+          />
         </div>
       </div>
-    </div>;
+    </div>
+  );
 };
 export default ProblemSolving;

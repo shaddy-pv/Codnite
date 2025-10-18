@@ -1,30 +1,103 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { Camera, User } from 'lucide-react';
+import AvatarUploadModal from '../AvatarUploadModal';
+
 interface AvatarProps {
-  src: string;
+  src?: string;
   alt?: string;
-  size?: 'xs' | 'sm' | 'md' | 'lg';
-  status?: 'online' | 'away' | 'offline';
+  size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl';
+  status?: 'online' | 'offline' | 'away' | 'busy';
+  editable?: boolean;
+  onAvatarChange?: (newAvatarUrl: string) => void;
+  className?: string;
 }
+
 const Avatar: React.FC<AvatarProps> = ({
   src,
-  alt = 'User avatar',
+  alt = 'Avatar',
   size = 'md',
-  status
+  status,
+  editable = false,
+  onAvatarChange,
+  className = ''
 }) => {
+  const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
+  const [currentAvatarUrl, setCurrentAvatarUrl] = useState(src);
+
   const sizeClasses = {
-    xs: 'h-6 w-6',
-    sm: 'h-8 w-8',
-    md: 'h-10 w-10',
-    lg: 'h-14 w-14'
+    xs: 'w-6 h-6',
+    sm: 'w-8 h-8',
+    md: 'w-10 h-10',
+    lg: 'w-12 h-12',
+    xl: 'w-16 h-16'
   };
+
   const statusColors = {
     online: 'bg-green-500',
+    offline: 'bg-gray-400',
     away: 'bg-yellow-500',
-    offline: 'bg-gray-500'
+    busy: 'bg-red-500'
   };
-  return <div className="relative">
-      <img src={src} alt={alt} className={`${sizeClasses[size]} rounded-full object-cover border-2 border-dark-600`} />
-      {status && <span className={`absolute bottom-0 right-0 block h-2.5 w-2.5 rounded-full ring-2 ring-dark-700 ${statusColors[status]}`}></span>}
-    </div>;
+
+  const handleAvatarChange = (newAvatarUrl: string) => {
+    setCurrentAvatarUrl(newAvatarUrl);
+    onAvatarChange?.(newAvatarUrl);
+  };
+
+  const handleEditClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsUploadModalOpen(true);
+  };
+
+  return (
+    <>
+      <div className={`relative inline-block ${className}`}>
+        <div className={`${sizeClasses[size]} rounded-full overflow-hidden bg-gray-200 dark:bg-gray-700 flex items-center justify-center`}>
+          {currentAvatarUrl ? (
+            <img
+              src={currentAvatarUrl}
+              alt={alt}
+              className="w-full h-full object-cover"
+              onError={(e) => {
+                // Fallback to default avatar if image fails to load
+                const target = e.target as HTMLImageElement;
+                target.src = '/default-avatar.svg';
+              }}
+            />
+          ) : (
+            <User className={`${size === 'xs' ? 'w-3 h-3' : size === 'sm' ? 'w-4 h-4' : size === 'md' ? 'w-5 h-5' : size === 'lg' ? 'w-6 h-6' : 'w-8 h-8'} text-gray-500`} />
+          )}
+        </div>
+
+        {/* Status indicator */}
+        {status && (
+          <div className={`absolute bottom-0 right-0 w-3 h-3 ${statusColors[status]} rounded-full border-2 border-white dark:border-gray-800`} />
+        )}
+
+        {/* Edit button */}
+        {editable && (
+          <button
+            onClick={handleEditClick}
+            className="avatar-edit-button absolute inset-0 bg-black bg-opacity-0 hover:bg-opacity-30 rounded-full flex items-center justify-center transition-all duration-200 group"
+            title="Change avatar"
+          >
+            <Camera className="w-4 h-4 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+          </button>
+        )}
+      </div>
+
+      {/* Upload Modal */}
+      {editable && (
+        <AvatarUploadModal
+          isOpen={isUploadModalOpen}
+          onClose={() => setIsUploadModalOpen(false)}
+          currentAvatarUrl={currentAvatarUrl}
+          onAvatarUpdate={handleAvatarChange}
+        />
+      )}
+    </>
+  );
 };
+
 export default Avatar;

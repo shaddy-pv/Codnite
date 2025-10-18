@@ -1,119 +1,67 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Search, Filter, TrendingUp, TrendingDown, ArrowRight, Medal } from 'lucide-react';
 import Avatar from '../components/ui/Avatar';
 import Button from '../components/ui/Button';
 import Badge from '../components/ui/Badge';
+import { leaderboardApi, collegesApi } from '../services/api';
+import { useToast } from '../components/ui/Toast';
 const Leaderboard: React.FC = () => {
   const [activeTab, setActiveTab] = useState('allIndia');
-  const leaderboardData = [{
-    id: 1,
-    name: 'Emily Chen',
-    username: 'emilyc',
-    avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=facearea&facepad=2&w=300&h=300&q=80',
-    college: 'MIT',
-    rank: 1,
-    previousRank: 1,
-    points: 9842,
-    problemsSolved: 458,
-    badges: ['Top Coder', 'Challenge Champion']
-  }, {
-    id: 2,
-    name: 'Alex Johnson',
-    username: 'alexj',
-    avatar: 'https://images.unsplash.com/photo-1599566150163-29194dcaad36?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=facearea&facepad=2&w=300&h=300&q=80',
-    college: 'Stanford',
-    rank: 2,
-    previousRank: 3,
-    points: 9756,
-    problemsSolved: 442,
-    badges: ['Algorithm Master']
-  }, {
-    id: 3,
-    name: 'Sophia Lee',
-    username: 'sophial',
-    avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=facearea&facepad=2&w=300&h=300&q=80',
-    college: 'Harvard',
-    rank: 3,
-    previousRank: 2,
-    points: 9584,
-    problemsSolved: 435,
-    badges: ['Problem Solver']
-  }, {
-    id: 4,
-    name: 'Michael Wang',
-    username: 'michaelw',
-    avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=facearea&facepad=2&w=300&h=300&q=80',
-    college: 'Caltech',
-    rank: 4,
-    previousRank: 4,
-    points: 9247,
-    problemsSolved: 421,
-    badges: ['Data Structure Expert']
-  }, {
-    id: 5,
-    name: 'Jessica Kim',
-    username: 'jessicak',
-    avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=facearea&facepad=2&w=300&h=300&q=80',
-    college: 'Princeton',
-    rank: 5,
-    previousRank: 6,
-    points: 9102,
-    problemsSolved: 415,
-    badges: ['Dynamic Programming Pro']
-  }, {
-    id: 6,
-    name: 'David Smith',
-    username: 'davids',
-    avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=facearea&facepad=2&w=300&h=300&q=80',
-    college: 'UC Berkeley',
-    rank: 6,
-    previousRank: 5,
-    points: 8975,
-    problemsSolved: 408,
-    badges: ['Graph Theory Expert']
-  }, {
-    id: 7,
-    name: 'Olivia Martinez',
-    username: 'oliviam',
-    avatar: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=facearea&facepad=2&w=300&h=300&q=80',
-    college: 'UCLA',
-    rank: 7,
-    previousRank: 7,
-    points: 8842,
-    problemsSolved: 402,
-    badges: ['Frontend Wizard']
-  }];
-  const collegeLeaderboard = [{
-    id: 1,
-    name: 'Massachusetts Institute of Technology',
-    shortName: 'MIT',
-    logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/0/0c/MIT_logo.svg/1200px-MIT_logo.svg.png',
-    rank: 1,
-    previousRank: 1,
-    points: 58942,
-    members: 1248,
-    topPerformer: 'Emily Chen'
-  }, {
-    id: 2,
-    name: 'Stanford University',
-    shortName: 'Stanford',
-    logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/4b/Stanford_Cardinal_logo.svg/1200px-Stanford_Cardinal_logo.svg.png',
-    rank: 2,
-    previousRank: 2,
-    points: 57584,
-    members: 1142,
-    topPerformer: 'Alex Johnson'
-  }, {
-    id: 3,
-    name: 'Harvard University',
-    shortName: 'Harvard',
-    logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/76/Harvard_Crimson_logo.svg/1200px-Harvard_Crimson_logo.svg.png',
-    rank: 3,
-    previousRank: 4,
-    points: 54298,
-    members: 1056,
-    topPerformer: 'Sophia Lee'
-  }];
+  const [leaderboardData, setLeaderboardData] = useState<any[]>([]);
+  const [collegeLeaderboard, setCollegeLeaderboard] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [selectedCollege, setSelectedCollege] = useState<string>('');
+  const [timeframe, setTimeframe] = useState<string>('all');
+  const { handleApiError } = useToast();
+
+  // Load leaderboard data
+  const loadLeaderboard = async () => {
+    try {
+      setIsLoading(true);
+      const response = await leaderboardApi.getLeaderboard(1, 50, timeframe, selectedCollege || undefined);
+      setLeaderboardData(response.leaderboard);
+    } catch (error: any) {
+      handleApiError(error, 'Failed to load leaderboard');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Load colleges
+  const loadColleges = async () => {
+    try {
+      const response = await collegesApi.getColleges(1, 100);
+      // Colleges loaded but not stored in state since we're not using them
+    } catch (error: any) {
+      handleApiError(error, 'Failed to load colleges');
+    }
+  };
+
+  // Load college leaderboard
+  const loadCollegeLeaderboard = async (collegeId: string) => {
+    try {
+      const response = await leaderboardApi.getCollegeLeaderboard(collegeId, 20);
+      setCollegeLeaderboard(response.leaderboard);
+    } catch (error: any) {
+      handleApiError(error, 'Failed to load college leaderboard');
+    }
+  };
+
+  // Load data on component mount
+  useEffect(() => {
+    loadLeaderboard();
+    loadColleges();
+  }, []);
+
+  // Reload when filters change
+  useEffect(() => {
+    if (activeTab === 'allIndia') {
+      loadLeaderboard();
+    } else if (activeTab === 'college' && selectedCollege) {
+      loadCollegeLeaderboard(selectedCollege);
+    }
+  }, [activeTab, selectedCollege, timeframe]);
+
   return <div className="max-w-screen-xl mx-auto">
       {/* Header */}
       <div className="mb-6">
@@ -190,9 +138,10 @@ const Leaderboard: React.FC = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-dark-500">
-                {leaderboardData.map(user => {
-              const rankChange = user.previousRank - user.rank;
-              return <tr key={user.id} className="hover:bg-dark-500">
+                {leaderboardData && leaderboardData.length > 0 ? (
+                  leaderboardData.map(user => {
+                    const rankChange = (user.previousRank || 0) - (user.rank || 0);
+                    return <tr key={user.id} className="hover:bg-dark-500">
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">
                           <span className={`font-medium ${user.rank === 1 ? 'text-yellow-500' : user.rank === 2 ? 'text-gray-400' : user.rank === 3 ? 'text-amber-700' : ''}`}>
@@ -204,27 +153,31 @@ const Leaderboard: React.FC = () => {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">
-                          <Avatar src={user.avatar} size="sm" />
+                          <Avatar src={user.avatarUrl || '/default-avatar.svg'} size="sm" />
                           <div className="ml-3">
-                            <div className="font-medium">{user.name}</div>
+                            <div className="font-medium">{user.name || 'Unknown User'}</div>
                             <div className="text-dark-300 text-sm">
-                              @{user.username}
+                              @{user.username || 'unknown'}
                             </div>
                           </div>
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        {user.college}
+                        {user.college?.name || 'No College'}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap font-medium">
-                        {user.points.toLocaleString()}
+                        {(user.points || 0).toLocaleString()}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        {user.problemsSolved}
+                        {user.stats?.problemAcceptedCount || 0}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex flex-wrap gap-1">
-                          {user.badges.map((badge, index) => <Badge key={index} text={badge} color={index === 0 ? 'purple' : 'blue'} />)}
+                          {user.badges && user.badges.length > 0 ? (
+                            user.badges.map((badge, index) => <Badge key={index} text={badge} color={index === 0 ? 'purple' : 'blue'} />)
+                          ) : (
+                            <span className="text-dark-400 text-sm">No badges</span>
+                          )}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right">
@@ -233,7 +186,17 @@ const Leaderboard: React.FC = () => {
                         </Button>
                       </td>
                     </tr>;
-            })}
+                  })
+                ) : (
+                  <tr>
+                    <td colSpan={6} className="px-6 py-8 text-center text-dark-300">
+                      <div className="flex flex-col items-center">
+                        <div className="text-lg font-medium mb-2">No leaderboard data available</div>
+                        <div className="text-sm">Leaderboard will appear here once data is loaded.</div>
+                      </div>
+                    </td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>
@@ -274,9 +237,10 @@ const Leaderboard: React.FC = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-dark-500">
-                {collegeLeaderboard.map(college => {
-              const rankChange = college.previousRank - college.rank;
-              return <tr key={college.id} className="hover:bg-dark-500">
+                {collegeLeaderboard && collegeLeaderboard.length > 0 ? (
+                  collegeLeaderboard.map(college => {
+                    const rankChange = (college.previousRank || 0) - (college.rank || 0);
+                    return <tr key={college.id} className="hover:bg-dark-500">
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">
                           <span className={`font-medium ${college.rank === 1 ? 'text-yellow-500' : college.rank === 2 ? 'text-gray-400' : college.rank === 3 ? 'text-amber-700' : ''}`}>
@@ -288,23 +252,23 @@ const Leaderboard: React.FC = () => {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">
-                          <img src={college.logo} alt={college.name} className="h-8 w-8 object-contain" />
+                          <img src={college.logo || '/default-college-logo.svg'} alt={college.name || 'College'} className="h-8 w-8 object-contain" />
                           <div className="ml-3">
-                            <div className="font-medium">{college.name}</div>
+                            <div className="font-medium">{college.name || 'Unknown College'}</div>
                             <div className="text-dark-300 text-sm">
-                              {college.shortName}
+                              {college.shortName || 'N/A'}
                             </div>
                           </div>
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap font-medium">
-                        {college.points.toLocaleString()}
+                        {(college.points || 0).toLocaleString()}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        {college.members.toLocaleString()}
+                        {(college.members || 0).toLocaleString()}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        {college.topPerformer}
+                        {college.topPerformer || 'N/A'}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right">
                         <Button variant="ghost" rightIcon={<ArrowRight className="h-4 w-4" />} size="sm">
@@ -312,7 +276,17 @@ const Leaderboard: React.FC = () => {
                         </Button>
                       </td>
                     </tr>;
-            })}
+                  })
+                ) : (
+                  <tr>
+                    <td colSpan={6} className="px-6 py-8 text-center text-dark-300">
+                      <div className="flex flex-col items-center">
+                        <div className="text-lg font-medium mb-2">No college data available</div>
+                        <div className="text-sm">College rankings will appear here once data is loaded.</div>
+                      </div>
+                    </td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>

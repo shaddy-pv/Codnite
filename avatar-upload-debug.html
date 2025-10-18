@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Avatar Upload Debug</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        .button:hover {
+            background: #0056b3;
+        }
+        .status {
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+        }
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        .status.info {
+            background: #d1ecf1;
+            color: #0c5460;
+        }
+        .log {
+            background: #f8f9fa;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 10px;
+            height: 200px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        .preview {
+            max-width: 200px;
+            max-height: 200px;
+            border-radius: 8px;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔧 Avatar Upload Debug</h1>
+    
+    <div class="container">
+        <h2>Authentication</h2>
+        <div id="authStatus" class="status info">Not authenticated</div>
+        <button class="button" onclick="login()">Login</button>
+        <button class="button" onclick="logout()">Logout</button>
+    </div>
+
+    <div class="container">
+        <h2>Upload Test</h2>
+        <div>
+            <input type="file" id="fileInput" accept="image/*">
+            <button class="button" onclick="uploadFile()">Upload Avatar</button>
+        </div>
+        
+        <div id="preview"></div>
+        
+        <div id="uploadStatus" class="status info" style="display: none;"></div>
+    </div>
+
+    <div class="container">
+        <h2>Debug Log</h2>
+        <div id="log" class="log"></div>
+        <button class="button" onclick="clearLog()">Clear Log</button>
+    </div>
+
+    <script>
+        const API_BASE_URL = 'http://localhost:5000/api';
+        
+        let authToken = '';
+        let userId = '';
+
+        function log(message, data = null) {
+            const timestamp = new Date().toLocaleTimeString();
+            const logElement = document.getElementById('log');
+            const logEntry = `[${timestamp}] ${message}${data ? '\n' + JSON.stringify(data, null, 2) : ''}\n`;
+            logElement.textContent += logEntry;
+            logElement.scrollTop = logElement.scrollHeight;
+            console.log(message, data);
+        }
+
+        function updateStatus(elementId, message, type = 'info') {
+            const element = document.getElementById(elementId);
+            element.textContent = message;
+            element.className = `status ${type}`;
+            element.style.display = 'block';
+        }
+
+        async function login() {
+            try {
+                log('🔐 Attempting login...');
+                
+                // Try to register first
+                try {
+                    const registerResponse = await fetch(`${API_BASE_URL}/auth/register`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            email: 'debug@example.com',
+                            password: 'debugpassword123',
+                            username: 'debuguser',
+                            name: 'Debug User'
+                        })
+                    });
+                    
+                    if (registerResponse.ok) {
+                        const registerData = await registerResponse.json();
+                        authToken = registerData.token;
+                        userId = registerData.user.id;
+                        log('✅ User registered successfully', { userId });
+                    } else {
+                        const error = await registerResponse.json();
+                        log('ℹ️ Registration failed (user might exist)', error);
+                    }
+                } catch (error) {
+                    log('ℹ️ Registration error (continuing with login)', error);
+                }
+
+                // Try to login
+                const loginResponse = await fetch(`${API_BASE_URL}/auth/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        email: 'debug@example.com',
+                        password: 'debugpassword123'
+                    })
+                });
+
+                if (!loginResponse.ok) {
+                    throw new Error(`Login failed: ${loginResponse.statusText}`);
+                }
+
+                const loginData = await loginResponse.json();
+                authToken = loginData.token;
+                userId = loginData.user.id;
+                
+                updateStatus('authStatus', 'Authenticated successfully', 'success');
+                log('✅ Login successful', { userId });
+                
+            } catch (error) {
+                updateStatus('authStatus', `Login failed: ${error.message}`, 'error');
+                log('❌ Login failed', error);
+            }
+        }
+
+        function logout() {
+            authToken = '';
+            userId = '';
+            updateStatus('authStatus', 'Not authenticated', 'info');
+            log('👋 Logged out');
+        }
+
+        async function uploadFile() {
+            if (!authToken) {
+                log('❌ Not authenticated');
+                return;
+            }
+
+            const fileInput = document.getElementById('fileInput');
+            const file = fileInput.files[0];
+
+            if (!file) {
+                log('❌ No file selected');
+                return;
+            }
+
+            log(`📁 Selected file: ${file.name} (${file.size} bytes, ${file.type})`);
+
+            // Show preview
+            const preview = document.getElementById('preview');
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                preview.innerHTML = `<img src="${e.target.result}" class="preview" alt="Preview">`;
+            };
+            reader.readAsDataURL(file);
+
+            try {
+                updateStatus('uploadStatus', 'Uploading...', 'info');
+                
+                const formData = new FormData();
+                formData.append('avatar', file);
+
+                log('📤 Sending upload request...');
+                
+                const response = await fetch(`${API_BASE_URL}/upload/avatar`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: formData
+                });
+
+                log(`📥 Response status: ${response.status}`);
+                
+                const responseText = await response.text();
+                log('📥 Response body:', responseText);
+
+                if (!response.ok) {
+                    throw new Error(`Upload failed: ${response.status} ${response.statusText}`);
+                }
+
+                const data = JSON.parse(responseText);
+                log('✅ Upload successful', data);
+                
+                updateStatus('uploadStatus', `Upload successful! Avatar URL: ${data.avatarUrl}`, 'success');
+                
+                // Test if the image is accessible
+                if (data.avatarUrl) {
+                    log(`🔗 Testing image access: ${data.avatarUrl}`);
+                    const imgTest = new Image();
+                    imgTest.onload = () => {
+                        log('✅ Image is accessible and loads correctly');
+                    };
+                    imgTest.onerror = () => {
+                        log('❌ Image failed to load');
+                    };
+                    imgTest.src = data.avatarUrl;
+                }
+
+            } catch (error) {
+                log('❌ Upload failed', error);
+                updateStatus('uploadStatus', `Upload failed: ${error.message}`, 'error');
+            }
+        }
+
+        function clearLog() {
+            document.getElementById('log').textContent = '';
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            log('🚀 Avatar upload debug page loaded');
+            log('ℹ️ Click "Login" to start testing');
+        });
+    </script>
+</body>
+</html>

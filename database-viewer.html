@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Codnite Database Viewer</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .summary {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        .summary-card {
+            background: #007bff;
+            color: white;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .summary-card h3 {
+            margin: 0 0 10px 0;
+            font-size: 24px;
+        }
+        .summary-card p {
+            margin: 0;
+            opacity: 0.9;
+        }
+        .section {
+            margin-bottom: 30px;
+        }
+        .section h2 {
+            color: #333;
+            border-bottom: 2px solid #007bff;
+            padding-bottom: 10px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+        th {
+            background-color: #007bff;
+            color: white;
+        }
+        tr:nth-child(even) {
+            background-color: #f2f2f2;
+        }
+        .btn {
+            background: #007bff;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        .btn:hover {
+            background: #0056b3;
+        }
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+        }
+        .error {
+            color: red;
+            padding: 10px;
+            background: #ffe6e6;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+        }
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🗄️ Codnite Database Viewer</h1>
+        
+        <div id="connection-status" class="status">
+            <strong>Connection Status:</strong> <span id="status-text">Checking...</span>
+        </div>
+        
+        <div class="summary" id="summary">
+            <div class="loading">Loading database summary...</div>
+        </div>
+
+        <div class="section">
+            <h2>👥 Users</h2>
+            <button class="btn" onclick="loadUsers()">Load Users</button>
+            <div id="users-content"></div>
+        </div>
+
+        <div class="section">
+            <h2>📝 Posts</h2>
+            <button class="btn" onclick="loadPosts()">Load Posts</button>
+            <div id="posts-content"></div>
+        </div>
+
+        <div class="section">
+            <h2>🔗 Follows</h2>
+            <button class="btn" onclick="loadFollows()">Load Follows</button>
+            <div id="follows-content"></div>
+        </div>
+
+        <div class="section">
+            <h2>🧩 Problems</h2>
+            <button class="btn" onclick="loadProblems()">Load Problems</button>
+            <div id="problems-content"></div>
+        </div>
+
+        <div class="section">
+            <h2>🏫 Colleges</h2>
+            <button class="btn" onclick="loadColleges()">Load Colleges</button>
+            <div id="colleges-content"></div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:5000/api/db';
+
+        // Check connection status
+        async function checkConnection() {
+            try {
+                const response = await fetch(`${API_BASE}/summary`);
+                if (response.ok) {
+                    document.getElementById('status-text').textContent = '✅ Connected to Database';
+                    document.getElementById('connection-status').className = 'status success';
+                } else {
+                    throw new Error('Server responded with error');
+                }
+            } catch (error) {
+                document.getElementById('status-text').textContent = '❌ Cannot connect to Database';
+                document.getElementById('connection-status').className = 'status error';
+                console.error('Connection error:', error);
+            }
+        }
+
+        // Load database summary
+        async function loadSummary() {
+            try {
+                const response = await fetch(`${API_BASE}/summary`);
+                const data = await response.json();
+                
+                const summaryDiv = document.getElementById('summary');
+                summaryDiv.innerHTML = `
+                    <div class="summary-card">
+                        <h3>${data.summary.users}</h3>
+                        <p>Users</p>
+                    </div>
+                    <div class="summary-card">
+                        <h3>${data.summary.posts}</h3>
+                        <p>Posts</p>
+                    </div>
+                    <div class="summary-card">
+                        <h3>${data.summary.follows}</h3>
+                        <p>Follows</p>
+                    </div>
+                    <div class="summary-card">
+                        <h3>${data.summary.problems}</h3>
+                        <p>Problems</p>
+                    </div>
+                    <div class="summary-card">
+                        <h3>${data.summary.colleges}</h3>
+                        <p>Colleges</p>
+                    </div>
+                `;
+            } catch (error) {
+                document.getElementById('summary').innerHTML = 
+                    '<div class="error">Error loading summary: ' + error.message + '</div>';
+            }
+        }
+
+        // Load users
+        async function loadUsers() {
+            const contentDiv = document.getElementById('users-content');
+            contentDiv.innerHTML = '<div class="loading">Loading users...</div>';
+            
+            try {
+                const response = await fetch(`${API_BASE}/users`);
+                const data = await response.json();
+                
+                if (data.users.length === 0) {
+                    contentDiv.innerHTML = '<p>No users found.</p>';
+                    return;
+                }
+
+                let tableHTML = `
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Email</th>
+                                <th>Username</th>
+                                <th>Name</th>
+                                <th>Points</th>
+                                <th>Created At</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                `;
+
+                data.users.forEach(user => {
+                    tableHTML += `
+                        <tr>
+                            <td>${user.id.substring(0, 8)}...</td>
+                            <td>${user.email}</td>
+                            <td>${user.username}</td>
+                            <td>${user.name}</td>
+                            <td>${user.points}</td>
+                            <td>${new Date(user.created_at).toLocaleDateString()}</td>
+                        </tr>
+                    `;
+                });
+
+                tableHTML += '</tbody></table>';
+                contentDiv.innerHTML = tableHTML;
+            } catch (error) {
+                contentDiv.innerHTML = '<div class="error">Error loading users: ' + error.message + '</div>';
+            }
+        }
+
+        // Load posts
+        async function loadPosts() {
+            const contentDiv = document.getElementById('posts-content');
+            contentDiv.innerHTML = '<div class="loading">Loading posts...</div>';
+            
+            try {
+                const response = await fetch(`${API_BASE}/posts`);
+                const data = await response.json();
+                
+                if (data.posts.length === 0) {
+                    contentDiv.innerHTML = '<p>No posts found.</p>';
+                    return;
+                }
+
+                let tableHTML = `
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Title</th>
+                                <th>Author</th>
+                                <th>Language</th>
+                                <th>Created At</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                `;
+
+                data.posts.forEach(post => {
+                    tableHTML += `
+                        <tr>
+                            <td>${post.title}</td>
+                            <td>${post.author_username}</td>
+                            <td>${post.language || 'N/A'}</td>
+                            <td>${new Date(post.created_at).toLocaleDateString()}</td>
+                        </tr>
+                    `;
+                });
+
+                tableHTML += '</tbody></table>';
+                contentDiv.innerHTML = tableHTML;
+            } catch (error) {
+                contentDiv.innerHTML = '<div class="error">Error loading posts: ' + error.message + '</div>';
+            }
+        }
+
+        // Load follows
+        async function loadFollows() {
+            const contentDiv = document.getElementById('follows-content');
+            contentDiv.innerHTML = '<div class="loading">Loading follows...</div>';
+            
+            try {
+                const response = await fetch(`${API_BASE}/follows`);
+                const data = await response.json();
+                
+                if (data.follows.length === 0) {
+                    contentDiv.innerHTML = '<p>No follows found.</p>';
+                    return;
+                }
+
+                let tableHTML = `
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Follower</th>
+                                <th>Following</th>
+                                <th>Created At</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                `;
+
+                data.follows.forEach(follow => {
+                    tableHTML += `
+                        <tr>
+                            <td>${follow.follower_username}</td>
+                            <td>${follow.following_username}</td>
+                            <td>${new Date(follow.created_at).toLocaleDateString()}</td>
+                        </tr>
+                    `;
+                });
+
+                tableHTML += '</tbody></table>';
+                contentDiv.innerHTML = tableHTML;
+            } catch (error) {
+                contentDiv.innerHTML = '<div class="error">Error loading follows: ' + error.message + '</div>';
+            }
+        }
+
+        // Load problems
+        async function loadProblems() {
+            const contentDiv = document.getElementById('problems-content');
+            contentDiv.innerHTML = '<div class="loading">Loading problems...</div>';
+            
+            try {
+                const response = await fetch(`${API_BASE}/problems`);
+                const data = await response.json();
+                
+                if (data.problems.length === 0) {
+                    contentDiv.innerHTML = '<p>No problems found.</p>';
+                    return;
+                }
+
+                let tableHTML = `
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Title</th>
+                                <th>Difficulty</th>
+                                <th>Acceptance Rate</th>
+                                <th>Tags</th>
+                                <th>Created At</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                `;
+
+                data.problems.forEach(problem => {
+                    tableHTML += `
+                        <tr>
+                            <td>${problem.title}</td>
+                            <td>${problem.difficulty}</td>
+                            <td>${problem.acceptance_rate}%</td>
+                            <td>${Array.isArray(problem.tags) ? problem.tags.join(', ') : 'N/A'}</td>
+                            <td>${new Date(problem.created_at).toLocaleDateString()}</td>
+                        </tr>
+                    `;
+                });
+
+                tableHTML += '</tbody></table>';
+                contentDiv.innerHTML = tableHTML;
+            } catch (error) {
+                contentDiv.innerHTML = '<div class="error">Error loading problems: ' + error.message + '</div>';
+            }
+        }
+
+        // Load colleges
+        async function loadColleges() {
+            const contentDiv = document.getElementById('colleges-content');
+            contentDiv.innerHTML = '<div class="loading">Loading colleges...</div>';
+            
+            try {
+                const response = await fetch(`${API_BASE}/colleges`);
+                const data = await response.json();
+                
+                if (data.colleges.length === 0) {
+                    contentDiv.innerHTML = '<p>No colleges found.</p>';
+                    return;
+                }
+
+                let tableHTML = `
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Short Name</th>
+                                <th>Location</th>
+                                <th>Rank</th>
+                                <th>Created At</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                `;
+
+                data.colleges.forEach(college => {
+                    tableHTML += `
+                        <tr>
+                            <td>${college.name}</td>
+                            <td>${college.short_name}</td>
+                            <td>${college.location}</td>
+                            <td>${college.rank}</td>
+                            <td>${new Date(college.created_at).toLocaleDateString()}</td>
+                        </tr>
+                    `;
+                });
+
+                tableHTML += '</tbody></table>';
+                contentDiv.innerHTML = tableHTML;
+            } catch (error) {
+                contentDiv.innerHTML = '<div class="error">Error loading colleges: ' + error.message + '</div>';
+            }
+        }
+
+        // Load summary and check connection on page load
+        window.onload = function() {
+            checkConnection();
+            loadSummary();
+        };
+    </script>
+</body>
+</html>

@@ -1,492 +1,532 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import { MessageSquare, Share2, Award, Code, Activity, Bookmark, MapPin, Briefcase, Calendar, ExternalLink, Linkedin, Globe, TrendingUp, Users, Star } from 'lucide-react';
+import { MessageSquare, Share2, Award, Code, Activity, Bookmark, MapPin, Briefcase, Calendar, ExternalLink, Linkedin, Globe, TrendingUp, Users, Star, Edit3, ThumbsUp, Camera } from 'lucide-react';
 import Avatar from '../components/ui/Avatar';
-import Button from '../components/ui/Button';
+import { Button } from '../components/ui/Button';
 import Badge from '../components/ui/Badge';
 import Card from '../components/ui/Card';
+import Loading, { PostSkeleton } from '../components/ui/Loading';
+import { EmptyState } from '../components/ui/EmptyState';
+import ProfileEditModal from '../components/ProfileEditModal';
+import UserStats from '../components/UserStats';
+import UserBadges from '../components/UserBadges';
+import PostCard from '../components/PostCard';
+import FollowButton from '../components/FollowButton';
+import MessageButton from '../components/MessageButton';
+import FollowersModal from '../components/FollowersModal';
+import { api, User, Post } from '../services/api';
+import { useToast } from '../components/ui/Toast';
 const Profile: React.FC = () => {
-  const {
-    userId
-  } = useParams<{
-    userId: string;
-  }>();
+  const { userId } = useParams<{ userId: string }>();
   const [activeTab, setActiveTab] = useState('posts');
-  // Mock user data
-  const user = {
-    id: userId,
-    name: 'Alex Johnson',
-    username: 'alexj',
-    avatar: 'https://images.unsplash.com/photo-1599566150163-29194dcaad36?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=facearea&facepad=2&w=300&h=300&q=80',
-    coverImage: 'https://images.unsplash.com/photo-1542831371-29b0f74f9713?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1470&q=80',
-    bio: 'Software Engineer | Problem Solver | Competitive Programmer',
-    college: 'Stanford University',
-    location: 'Palo Alto, CA',
-    work: 'Software Engineer at Google',
-    joinedDate: 'June 2021',
-    website: 'https://alexjohnson.dev',
-    github: 'alexjohnson',
-    linkedin: 'alexjohnson',
-    stats: {
-      rank: 42,
-      points: 7845,
-      problemsSolved: 284,
-      contributions: 156,
-      followers: 328,
-      following: 142
-    },
-    badges: [{
-      name: 'Algorithm Master',
-      icon: 'award',
-      color: 'blue',
-      description: 'Solved 100+ algorithm problems'
-    }, {
-      name: 'Top 5% Coder',
-      icon: 'trending-up',
-      color: 'purple',
-      description: 'Ranked in the top 5% globally'
-    }, {
-      name: 'Challenge Champion',
-      icon: 'trophy',
-      color: 'cyan',
-      description: 'Won 10+ coding challenges'
-    }],
-    skills: ['JavaScript', 'Python', 'React', 'Node.js', 'Algorithms', 'Data Structures', 'System Design', 'Machine Learning']
+  const [user, setUser] = useState<User | null>(null);
+  const [posts, setPosts] = useState<Post[]>([]);
+  const [stats, setStats] = useState<any>(null);
+  const [badges, setBadges] = useState<any[]>([]);
+  const [achievements, setAchievements] = useState<any[]>([]);
+  const [skills, setSkills] = useState<string[]>([]);
+  const [activity, setActivity] = useState<any[]>([]);
+  const [isFollowing, setIsFollowing] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isEditing, setIsEditing] = useState(false);
+  const [isCurrentUser, setIsCurrentUser] = useState(false);
+  const [showFollowersModal, setShowFollowersModal] = useState(false);
+  const [followersModalType, setFollowersModalType] = useState<'followers' | 'following'>('followers');
+  const { addToast } = useToast();
+
+  // Check if this is the current user
+  const checkIfCurrentUser = () => {
+    // Get current user from App.tsx state or localStorage
+    const currentUser = localStorage.getItem('user');
+    console.log('Current user from localStorage:', currentUser);
+    console.log('Current userId from params:', userId);
+    
+    if (currentUser) {
+      const parsedUser = JSON.parse(currentUser);
+      console.log('Parsed user:', parsedUser);
+      const isCurrent = parsedUser.id === userId || userId === 'me';
+      console.log('Is current user:', isCurrent);
+      setIsCurrentUser(isCurrent);
+    }
   };
-  const posts = [{
-    type: 'post',
-    author: {
-      name: user.name,
-      avatar: user.avatar,
-      college: user.college,
-      username: user.username
-    },
-    content: {
-      text: "Just solved this tricky dynamic programming problem. Here's my approach:",
-      code: 'function coinChange(coins, amount) {\n  const dp = Array(amount + 1).fill(Infinity);\n  dp[0] = 0;\n  \n  for (const coin of coins) {\n    for (let i = coin; i <= amount; i++) {\n      dp[i] = Math.min(dp[i], dp[i - coin] + 1);\n    }\n  }\n  \n  return dp[amount] === Infinity ? -1 : dp[amount];\n}',
-      language: 'JavaScript'
-    },
-    tags: ['DynamicProgramming', 'Algorithms', 'JavaScript'],
-    stats: {
-      likes: 142,
-      comments: 38
-    },
-    time: '2 days ago'
-  }, {
-    type: 'post',
-    author: {
-      name: user.name,
-      avatar: user.avatar,
-      college: user.college,
-      username: user.username
-    },
-    content: {
-      text: 'Just completed my first tech interview with Google! Here are some tips for anyone preparing:',
-      image: 'https://images.unsplash.com/photo-1515378791036-0648a3ef77b2?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1470&q=80'
-    },
-    tags: ['Interview', 'Career', 'Google'],
-    stats: {
-      likes: 215,
-      comments: 42
-    },
-    time: '1 week ago'
-  }];
-  const solutions = [{
-    id: 1,
-    problem: {
-      title: 'Two Sum',
-      difficulty: 'Easy',
-      link: '/problem/two-sum'
-    },
-    language: 'JavaScript',
-    timeComplexity: 'O(n)',
-    spaceComplexity: 'O(n)',
-    likes: 86,
-    date: '3 days ago',
-    code: `function twoSum(nums, target) {
-  const map = new Map();
-  for (let i = 0; i < nums.length; i++) {
-    const complement = target - nums[i];
-    if (map.has(complement)) {
-      return [map.get(complement), i];
+
+  // Load user data
+  const loadUser = async () => {
+    if (!userId) return;
+    
+    console.log('Loading user for userId:', userId);
+    
+    try {
+      setIsLoading(true);
+      
+      // Determine the actual user ID to fetch
+      let actualUserId = userId;
+      
+      if (userId === 'me') {
+        // Get current user ID from localStorage or API
+        const currentUser = localStorage.getItem('user');
+        if (currentUser) {
+          const parsedUser = JSON.parse(currentUser);
+          actualUserId = parsedUser.id;
+          console.log('Using userId from localStorage:', actualUserId);
+        } else {
+          // Fallback: get current user from API
+          try {
+            const currentUserData = await api.getMe();
+            actualUserId = currentUserData.id;
+            console.log('Using userId from API:', actualUserId);
+          } catch (error) {
+            console.error('Failed to get current user:', error);
+            setUser(null);
+            setIsLoading(false);
+            return;
+          }
+        }
+      }
+      
+      console.log('Final actualUserId:', actualUserId);
+      
+      if (!actualUserId) {
+        setUser(null);
+        setIsLoading(false);
+        return;
+      }
+      
+      // Load all user data in parallel with proper error handling
+      const [userData, userStats, userBadges, userAchievements, userSkills, userActivity, followStatus] = await Promise.all([
+        api.getUser(actualUserId).catch(() => null),
+        api.getUserStats(actualUserId).catch(() => null),
+        api.getUserBadges(actualUserId).catch(() => []),
+        api.getUserAchievements(actualUserId).catch(() => []),
+        api.getUserSkills(actualUserId).catch(() => []),
+        api.getUserActivity(actualUserId).catch(() => []),
+        !isCurrentUser ? api.getFollowStatus(actualUserId).catch(() => ({ isFollowing: false })) : Promise.resolve({ isFollowing: false })
+      ]);
+      
+      console.log('Loaded user data:', userData);
+      
+      setUser(userData);
+      setStats(userStats);
+      setBadges(Array.isArray(userBadges) ? userBadges : []);
+      setAchievements(Array.isArray(userAchievements) ? userAchievements : []);
+      setSkills(Array.isArray(userSkills) ? userSkills : []);
+      setActivity(Array.isArray(userActivity) ? userActivity : []);
+      setIsFollowing(followStatus?.isFollowing || false);
+      
+    } catch (err: any) {
+      console.error('Error loading user:', err);
+      setUser(null);
+      addToast('Failed to load user profile', 'error');
+    } finally {
+      setIsLoading(false);
     }
-    map.set(nums[i], i);
-  }
-  return [];
-}`
-  }, {
-    id: 2,
-    problem: {
-      title: 'Merge Intervals',
-      difficulty: 'Medium',
-      link: '/problem/merge-intervals'
-    },
-    language: 'JavaScript',
-    timeComplexity: 'O(n log n)',
-    spaceComplexity: 'O(n)',
-    likes: 124,
-    date: '1 week ago',
-    code: `function merge(intervals) {
-  if (intervals.length <= 1) return intervals;
-  // Sort intervals by start time
-  intervals.sort((a, b) => a[0] - b[0]);
-  const result = [intervals[0]];
-  for (let i = 1; i < intervals.length; i++) {
-    const currentInterval = intervals[i];
-    const lastResult = result[result.length - 1];
-    // If current interval overlaps with the last result interval
-    if (currentInterval[0] <= lastResult[1]) {
-      // Merge the intervals
-      lastResult[1] = Math.max(lastResult[1], currentInterval[1]);
-    } else {
-      // Add current interval to result
-      result.push(currentInterval);
+  };
+
+  // Load user posts
+  const loadUserPosts = async () => {
+    if (!userId) return;
+    
+    try {
+      const userPosts = await api.getUserPosts(userId);
+      setPosts(Array.isArray(userPosts) ? userPosts : []);
+    } catch (err: any) {
+      console.error('Error loading user posts:', err);
+      setPosts([]);
+      addToast('Failed to load user posts', 'error');
     }
+  };
+
+  // Load data on mount
+  useEffect(() => {
+    checkIfCurrentUser();
+    loadUser();
+    loadUserPosts();
+  }, [userId]);
+
+  // Handle profile update
+  const handleProfileUpdated = (updatedUser: User) => {
+    setUser(updatedUser);
+    addToast('Profile updated successfully!', 'success');
+  };
+
+  if (isLoading) {
+    return (
+      <div className="max-w-screen-xl mx-auto">
+        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 mb-6">
+          <Loading text="Loading profile..." />
+        </div>
+      </div>
+    );
   }
-  return result;
-}`
-  }];
-  const achievements = [{
-    id: 1,
-    title: 'Stanford vs MIT Challenge Winner',
-    description: 'First place in the Algorithm Speedrun Challenge',
-    date: 'May 15, 2023',
-    points: 3000,
-    icon: 'trophy'
-  }, {
-    id: 2,
-    title: '100 Day Coding Streak',
-    description: 'Solved at least one problem every day for 100 days',
-    date: 'April 2, 2023',
-    points: 1000,
-    icon: 'activity'
-  }, {
-    id: 3,
-    title: 'Top Contributor',
-    description: 'One of the most active contributors in the Stanford community',
-    date: 'March 10, 2023',
-    points: 1500,
-    icon: 'star'
-  }];
-  return <div className="max-w-screen-xl mx-auto">
-      {/* Cover Image and Profile Info */}
-      <div className="bg-dark-600 rounded-xl border border-dark-500 overflow-hidden mb-6">
-        <div className="h-48 bg-cover bg-center" style={{
-        backgroundImage: `url(${user.coverImage})`
-      }}></div>
+
+  if (!user) {
+    return (
+      <div className="max-w-screen-xl mx-auto">
+        <EmptyState
+          title="User not found"
+          description="The user you're looking for doesn't exist or has been removed."
+        />
+      </div>
+    );
+  }
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+  };
+  return (
+    <div className="max-w-screen-xl mx-auto">
+      {/* Profile Header */}
+      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden mb-6">
+        {/* Cover Image */}
+        <div className="h-48 bg-gradient-to-r from-blue-500 to-purple-600 relative">
+          <div className="absolute inset-0 bg-black bg-opacity-20"></div>
+        </div>
+        
+        {/* Profile Info */}
         <div className="p-6 relative">
-          <div className="absolute -top-16 left-6 bg-dark-600 rounded-xl p-2 border-4 border-dark-600">
-            <Avatar src={user.avatar} size="lg" status="online" />
+          <div className="absolute -top-16 left-6 bg-white dark:bg-gray-800 rounded-xl p-2 border-4 border-white dark:border-gray-800">
+            <Avatar 
+              src={user.avatarUrl} 
+              alt={user.name}
+              size="lg"
+              editable={isCurrentUser}
+              onAvatarChange={(newAvatarUrl) => {
+                setUser(prev => prev ? { ...prev, avatarUrl: newAvatarUrl } : null);
+                // Update localStorage as well
+                const currentUser = localStorage.getItem('user');
+                if (currentUser) {
+                  const parsedUser = JSON.parse(currentUser);
+                  parsedUser.avatarUrl = newAvatarUrl;
+                  localStorage.setItem('user', JSON.stringify(parsedUser));
+                }
+              }}
+            />
+            {isCurrentUser && (
+              <div className="absolute -bottom-2 -right-2">
+                <button
+                  onClick={() => {
+                    // Trigger avatar upload modal
+                    const avatarElement = document.querySelector('.avatar-edit-button') as HTMLButtonElement;
+                    if (avatarElement) {
+                      avatarElement.click();
+                    }
+                  }}
+                  className="bg-primary-600 hover:bg-primary-700 text-white rounded-full p-2 shadow-lg transition-colors duration-200"
+                  title="Change Avatar"
+                >
+                  <Camera className="w-4 h-4" />
+                </button>
+              </div>
+            )}
           </div>
+          
           <div className="ml-36 flex flex-col md:flex-row md:items-center justify-between">
             <div>
               <div className="flex items-center">
-                <h1 className="text-2xl font-bold">{user.name}</h1>
-                <div className="ml-3">
-                  {user.badges.slice(0, 1).map((badge, index) => <Badge key={index} text={badge.name} color="purple" size="md" />)}
-                </div>
+                <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+                  {user.name}
+                </h1>
+                {badges && badges.length > 0 && (
+                  <div className="ml-3">
+                    <Badge text={badges[0].name} color="purple" size="md" />
+                  </div>
+                )}
               </div>
-              <p className="text-dark-300">@{user.username}</p>
+              <p className="text-gray-500 dark:text-gray-400">@{user.username}</p>
             </div>
+            
             <div className="flex mt-4 md:mt-0 space-x-2">
-              <Button variant="outline" leftIcon={<MessageSquare className="h-4 w-4" />}>
-                Message
-              </Button>
-              <Button variant="outline" leftIcon={<Users className="h-4 w-4" />}>
-                Follow
-              </Button>
+              {isCurrentUser ? (
+                <Button
+                  variant="outline"
+                  leftIcon={<Edit3 className="h-4 w-4" />}
+                  onClick={() => setIsEditing(true)}
+                >
+                  Edit Profile
+                </Button>
+              ) : (
+                <>
+                  <MessageButton
+                    userId={user.id}
+                    userName={user.name}
+                    userAvatar={user.avatarUrl}
+                    size="md"
+                  />
+                  <FollowButton
+                    userId={user.id}
+                    isFollowing={isFollowing}
+                    onFollowChange={setIsFollowing}
+                    size="md"
+                  />
+                </>
+              )}
               <Button variant="ghost" leftIcon={<Share2 className="h-4 w-4" />}>
                 Share
               </Button>
             </div>
           </div>
+          
+          {/* Bio and Links */}
           <div className="mt-6">
-            <p className="mb-4">{user.bio}</p>
+            {user.bio && <p className="mb-4 text-gray-700 dark:text-gray-300">{user.bio}</p>}
+            
             <div className="flex flex-wrap gap-y-2">
-              {user.college && <div className="flex items-center text-dark-300 mr-6">
+              {user.collegeId && (
+                <div className="flex items-center text-gray-500 dark:text-gray-400 mr-6">
                   <Award className="h-4 w-4 mr-2" />
-                  <span>{user.college}</span>
-                </div>}
-              {user.location && <div className="flex items-center text-dark-300 mr-6">
-                  <MapPin className="h-4 w-4 mr-2" />
-                  <span>{user.location}</span>
-                </div>}
-              {user.work && <div className="flex items-center text-dark-300 mr-6">
-                  <Briefcase className="h-4 w-4 mr-2" />
-                  <span>{user.work}</span>
-                </div>}
-              {user.joinedDate && <div className="flex items-center text-dark-300 mr-6">
-                  <Calendar className="h-4 w-4 mr-2" />
-                  <span>Joined {user.joinedDate}</span>
-                </div>}
-              {user.website && <div className="flex items-center text-dark-300 mr-6">
-                  <Globe className="h-4 w-4 mr-2" />
-                  <a href={user.website} target="_blank" rel="noopener noreferrer" className="hover:text-primary-blue">
-                    {user.website.replace(/^https?:\/\//, '')}
+                  <span>{user.collegeId}</span>
+                </div>
+              )}
+              {user.githubUsername && (
+                <div className="flex items-center text-gray-500 dark:text-gray-400 mr-6">
+                  <Code className="h-4 w-4 mr-2" />
+                  <a 
+                    href={`https://github.com/${user.githubUsername}`} 
+                    target="_blank" 
+                    rel="noopener noreferrer" 
+                    className="hover:text-blue-500 transition-colors"
+                  >
+                    {user.githubUsername}
                   </a>
-                </div>}
-              {user.github && <div className="flex items-center text-dark-300 mr-6">
-                  <div className="h-4 w-4 mr-2" />
-                  <a href={`https://github.com/${user.github}`} target="_blank" rel="noopener noreferrer" className="hover:text-primary-blue">
-                    {user.github}
-                  </a>
-                </div>}
-              {user.linkedin && <div className="flex items-center text-dark-300 mr-6">
+                </div>
+              )}
+              {user.linkedinUrl && (
+                <div className="flex items-center text-gray-500 dark:text-gray-400 mr-6">
                   <Linkedin className="h-4 w-4 mr-2" />
-                  <a href={`https://linkedin.com/in/${user.linkedin}`} target="_blank" rel="noopener noreferrer" className="hover:text-primary-blue">
-                    {user.linkedin}
+                  <a 
+                    href={user.linkedinUrl} 
+                    target="_blank" 
+                    rel="noopener noreferrer" 
+                    className="hover:text-blue-500 transition-colors"
+                  >
+                    LinkedIn
                   </a>
-                </div>}
+                </div>
+              )}
+              <div className="flex items-center text-gray-500 dark:text-gray-400 mr-6">
+                <Calendar className="h-4 w-4 mr-2" />
+                <span>Joined {formatDate(user.createdAt)}</span>
+              </div>
             </div>
           </div>
+          
           {/* Stats */}
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mt-6 pt-6 border-t border-dark-500">
-            <div className="text-center">
-              <div className="text-dark-300 text-sm">Rank</div>
-              <div className="text-xl font-bold">#{user.stats.rank}</div>
-            </div>
-            <div className="text-center">
-              <div className="text-dark-300 text-sm">Points</div>
-              <div className="text-xl font-bold">
-                {user.stats.points.toLocaleString()}
-              </div>
-            </div>
-            <div className="text-center">
-              <div className="text-dark-300 text-sm">Problems</div>
-              <div className="text-xl font-bold">
-                {user.stats.problemsSolved}
-              </div>
-            </div>
-            <div className="text-center">
-              <div className="text-dark-300 text-sm">Contributions</div>
-              <div className="text-xl font-bold">
-                {user.stats.contributions}
-              </div>
-            </div>
-            <div className="text-center">
-              <div className="text-dark-300 text-sm">Followers</div>
-              <div className="text-xl font-bold">{user.stats.followers}</div>
-            </div>
-            <div className="text-center">
-              <div className="text-dark-300 text-sm">Following</div>
-              <div className="text-xl font-bold">{user.stats.following}</div>
-            </div>
+          <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
+            <UserStats 
+              user={user} 
+              stats={stats} 
+              onFollowersClick={() => {
+                setFollowersModalType('followers');
+                setShowFollowersModal(true);
+              }}
+              onFollowingClick={() => {
+                setFollowersModalType('following');
+                setShowFollowersModal(true);
+              }}
+            />
           </div>
         </div>
+        
         {/* Tabs */}
-        <div className="flex border-t border-dark-500 overflow-x-auto">
-          <button onClick={() => setActiveTab('posts')} className={`py-3 px-6 transition-colors ${activeTab === 'posts' ? 'border-b-2 border-primary-blue text-primary-blue' : 'text-dark-300 hover:text-dark-100'}`}>
+        <div className="flex border-t border-gray-200 dark:border-gray-700 overflow-x-auto">
+          <button
+            onClick={() => setActiveTab('posts')}
+            className={`py-3 px-6 transition-colors ${
+              activeTab === 'posts'
+                ? 'border-b-2 border-blue-500 text-blue-500'
+                : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
+            }`}
+          >
             Posts
           </button>
-          <button onClick={() => setActiveTab('solutions')} className={`py-3 px-6 transition-colors ${activeTab === 'solutions' ? 'border-b-2 border-primary-blue text-primary-blue' : 'text-dark-300 hover:text-dark-100'}`}>
+          <button
+            onClick={() => setActiveTab('solutions')}
+            className={`py-3 px-6 transition-colors ${
+              activeTab === 'solutions'
+                ? 'border-b-2 border-blue-500 text-blue-500'
+                : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
+            }`}
+          >
             Solutions
           </button>
-          <button onClick={() => setActiveTab('achievements')} className={`py-3 px-6 transition-colors ${activeTab === 'achievements' ? 'border-b-2 border-primary-blue text-primary-blue' : 'text-dark-300 hover:text-dark-100'}`}>
+          <button
+            onClick={() => setActiveTab('achievements')}
+            className={`py-3 px-6 transition-colors ${
+              activeTab === 'achievements'
+                ? 'border-b-2 border-blue-500 text-blue-500'
+                : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
+            }`}
+          >
             Achievements
           </button>
-          <button onClick={() => setActiveTab('badges')} className={`py-3 px-6 transition-colors ${activeTab === 'badges' ? 'border-b-2 border-primary-blue text-primary-blue' : 'text-dark-300 hover:text-dark-100'}`}>
+          <button
+            onClick={() => setActiveTab('badges')}
+            className={`py-3 px-6 transition-colors ${
+              activeTab === 'badges'
+                ? 'border-b-2 border-blue-500 text-blue-500'
+                : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
+            }`}
+          >
             Badges
           </button>
         </div>
       </div>
+      
       {/* Tab Content */}
       <div className="flex flex-col md:flex-row gap-6">
         {/* Main Content */}
         <div className="flex-1">
-          {activeTab === 'posts' && <div className="space-y-6">
-              {posts.map((post, index) => <Card key={index} {...post} />)}
-            </div>}
-          {activeTab === 'solutions' && <div className="space-y-6">
-              {solutions.map(solution => <div key={solution.id} className="bg-dark-600 rounded-xl border border-dark-500 overflow-hidden">
-                  <div className="p-4 border-b border-dark-500">
-                    <div className="flex justify-between">
-                      <div>
-                        <a href={solution.problem.link} className="font-medium hover:text-primary-blue">
-                          {solution.problem.title}
-                        </a>
-                        <div className="flex items-center mt-1">
-                          <Badge text={solution.problem.difficulty} color={solution.problem.difficulty === 'Easy' ? 'blue' : solution.problem.difficulty === 'Medium' ? 'purple' : 'cyan'} className="mr-2" />
-                          <span className="text-dark-300 text-sm">
-                            {solution.date}
-                          </span>
-                        </div>
+          {activeTab === 'posts' && (
+            <div className="space-y-6">
+              {!posts || posts.length === 0 ? (
+                <EmptyState
+                  title="No posts yet"
+                  description="This user hasn't shared any posts yet."
+                />
+              ) : (
+                posts.map((post) => (
+                  <PostCard
+                    key={post.id}
+                    post={post}
+                    onLike={() => {}}
+                    onComment={() => {}}
+                    onShare={() => {}}
+                    onBookmark={() => {}}
+                  />
+                ))
+              )}
+            </div>
+          )}
+          
+          {activeTab === 'solutions' && (
+            <div className="space-y-6">
+              <EmptyState
+                title="No solutions yet"
+                description="This user hasn't shared any problem solutions yet."
+              />
+            </div>
+          )}
+          
+          {activeTab === 'achievements' && (
+            <div className="space-y-6">
+              {!achievements || achievements.length === 0 ? (
+                <EmptyState
+                  title="No achievements yet"
+                  description="This user hasn't earned any achievements yet."
+                />
+              ) : (
+                achievements.map((achievement) => (
+                  <div key={achievement.id} className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
+                    <div className="flex">
+                      <div className="bg-blue-100 dark:bg-blue-900 h-12 w-12 rounded-full flex items-center justify-center mr-4">
+                        {achievement.icon === 'trophy' && <Award className="h-6 w-6 text-blue-500" />}
+                        {achievement.icon === 'activity' && <Activity className="h-6 w-6 text-blue-500" />}
+                        {achievement.icon === 'star' && <Star className="h-6 w-6 text-blue-500" />}
                       </div>
-                      <div className="text-right">
-                        <div className="text-sm">
-                          <span className="text-dark-300">Time: </span>
-                          <span className="font-mono">
-                            {solution.timeComplexity}
-                          </span>
+                      <div className="flex-1">
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <h3 className="font-semibold text-gray-900 dark:text-white">
+                              {achievement.title}
+                            </h3>
+                            <p className="text-gray-600 dark:text-gray-400">
+                              {achievement.description}
+                            </p>
+                          </div>
+                          <div className="bg-gray-100 dark:bg-gray-700 rounded-full px-3 py-1 text-sm">
+                            +{achievement.points} points
+                          </div>
                         </div>
-                        <div className="text-sm">
-                          <span className="text-dark-300">Space: </span>
-                          <span className="font-mono">
-                            {solution.spaceComplexity}
-                          </span>
+                        <div className="mt-2 text-gray-500 dark:text-gray-400 text-sm">
+                          {achievement.date}
                         </div>
                       </div>
                     </div>
                   </div>
-                  <div className="p-4">
-                    <div className="bg-dark-700 rounded-md p-4 mb-4 overflow-x-auto">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-primary-blue text-xs">
-                          {solution.language}
-                        </span>
-                        <button className="text-dark-300 text-xs hover:text-dark-100">
-                          Copy
-                        </button>
-                      </div>
-                      <pre className="text-dark-200 text-sm font-mono">
-                        <code>{solution.code}</code>
-                      </pre>
-                    </div>
-                    <div className="flex justify-between">
-                      <button className="flex items-center text-dark-300 hover:text-primary-blue transition-colors">
-                        <ThumbsUp className="h-4 w-4 mr-1.5" />
-                        <span className="text-sm">{solution.likes}</span>
-                      </button>
-                      <div className="flex space-x-4">
-                        <button className="text-dark-300 hover:text-primary-blue transition-colors">
-                          <Bookmark className="h-4 w-4" />
-                        </button>
-                        <button className="text-dark-300 hover:text-primary-blue transition-colors">
-                          <Share2 className="h-4 w-4" />
-                        </button>
-                        <button className="text-dark-300 hover:text-primary-blue transition-colors">
-                          <ExternalLink className="h-4 w-4" />
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                </div>)}
-            </div>}
-          {activeTab === 'achievements' && <div className="space-y-6">
-              {achievements.map(achievement => <div key={achievement.id} className="bg-dark-600 rounded-xl border border-dark-500 overflow-hidden">
-                  <div className="p-6 flex">
-                    <div className="bg-primary-blue bg-opacity-20 h-12 w-12 rounded-full flex items-center justify-center mr-4">
-                      {achievement.icon === 'trophy' && <Award className="h-6 w-6 text-primary-blue" />}
-                      {achievement.icon === 'activity' && <Activity className="h-6 w-6 text-primary-blue" />}
-                      {achievement.icon === 'star' && <Star className="h-6 w-6 text-primary-blue" />}
-                    </div>
-                    <div className="flex-1">
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <h3 className="font-medium">{achievement.title}</h3>
-                          <p className="text-dark-300">
-                            {achievement.description}
-                          </p>
-                        </div>
-                        <div className="bg-dark-500 rounded-full px-3 py-1 text-sm">
-                          +{achievement.points} points
-                        </div>
-                      </div>
-                      <div className="mt-2 text-dark-300 text-sm">
-                        {achievement.date}
-                      </div>
-                    </div>
-                  </div>
-                </div>)}
-            </div>}
-          {activeTab === 'badges' && <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {user.badges.map((badge, index) => <div key={index} className="bg-dark-600 rounded-xl border border-dark-500 overflow-hidden">
-                  <div className="p-6 flex items-center">
-                    <div className={`bg-${badge.color === 'blue' ? 'primary-blue' : badge.color === 'purple' ? 'primary-purple' : 'primary-cyan'} bg-opacity-20 h-12 w-12 rounded-full flex items-center justify-center mr-4`}>
-                      {badge.icon === 'award' && <Award className={`h-6 w-6 text-${badge.color === 'blue' ? 'primary-blue' : badge.color === 'purple' ? 'primary-purple' : 'primary-cyan'}`} />}
-                      {badge.icon === 'trending-up' && <TrendingUp className={`h-6 w-6 text-${badge.color === 'blue' ? 'primary-blue' : badge.color === 'purple' ? 'primary-purple' : 'primary-cyan'}`} />}
-                      {badge.icon === 'trophy' && <Award className={`h-6 w-6 text-${badge.color === 'blue' ? 'primary-blue' : badge.color === 'purple' ? 'primary-purple' : 'primary-cyan'}`} />}
-                    </div>
-                    <div>
-                      <h3 className="font-medium">{badge.name}</h3>
-                      <p className="text-dark-300 text-sm">
-                        {badge.description}
-                      </p>
-                    </div>
-                  </div>
-                </div>)}
-            </div>}
+                ))
+              )}
+            </div>
+          )}
+          
+          {activeTab === 'badges' && (
+            <UserBadges badges={badges || []} />
+          )}
         </div>
+        
         {/* Sidebar */}
         <div className="md:w-80 space-y-6">
           {/* Skills */}
-          <div className="bg-dark-600 rounded-xl border border-dark-500 overflow-hidden">
-            <div className="p-4 border-b border-dark-500">
-              <h3 className="font-medium">Skills</h3>
-            </div>
-            <div className="p-4">
-              <div className="flex flex-wrap gap-2">
-                {user.skills.map((skill, index) => <Badge key={index} text={skill} color={index % 3 === 0 ? 'blue' : index % 3 === 1 ? 'purple' : 'cyan'} />)}
-              </div>
+          <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
+            <h3 className="font-semibold text-gray-900 dark:text-white mb-4">Skills</h3>
+            <div className="flex flex-wrap gap-2">
+              {!skills || skills.length === 0 ? (
+                <p className="text-gray-500 dark:text-gray-400 text-sm">No skills added yet</p>
+              ) : (
+                skills.map((skill, index) => (
+                  <Badge
+                    key={index}
+                    text={skill}
+                    color={index % 3 === 0 ? 'blue' : index % 3 === 1 ? 'purple' : 'cyan'}
+                  />
+                ))
+              )}
             </div>
           </div>
+          
           {/* Recent Activity */}
-          <div className="bg-dark-600 rounded-xl border border-dark-500 overflow-hidden">
-            <div className="p-4 border-b border-dark-500">
-              <h3 className="font-medium">Recent Activity</h3>
-            </div>
-            <div className="p-4">
-              <div className="space-y-4">
-                <div className="flex">
-                  <div className="mr-3 mt-0.5">
-                    <div className="h-2 w-2 rounded-full bg-primary-blue"></div>
+          <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
+            <h3 className="font-semibold text-gray-900 dark:text-white mb-4">Recent Activity</h3>
+            <div className="space-y-4">
+              {!activity || activity.length === 0 ? (
+                <p className="text-gray-500 dark:text-gray-400 text-sm">No recent activity</p>
+              ) : (
+                activity.map((item, index) => (
+                  <div key={index} className="flex">
+                    <div className="mr-3 mt-0.5">
+                      <div className="h-2 w-2 rounded-full bg-blue-500"></div>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-700 dark:text-gray-300">
+                        {item.type === 'post' ? (
+                          <>Created post <span className="text-blue-500">{item.title}</span></>
+                        ) : (
+                          <>Solved <span className="text-blue-500">{item.problem_title}</span> problem</>
+                        )}
+                      </p>
+                      <p className="text-gray-500 dark:text-gray-400 text-xs">
+                        {new Date(item.created_at).toLocaleDateString()}
+                      </p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-sm">
-                      Solved{' '}
-                      <span className="text-primary-blue">Merge Intervals</span>{' '}
-                      problem
-                    </p>
-                    <p className="text-dark-300 text-xs">2 days ago</p>
-                  </div>
-                </div>
-                <div className="flex">
-                  <div className="mr-3 mt-0.5">
-                    <div className="h-2 w-2 rounded-full bg-primary-blue"></div>
-                  </div>
-                  <div>
-                    <p className="text-sm">
-                      Joined{' '}
-                      <span className="text-primary-blue">
-                        Weekly Coding Contest #42
-                      </span>
-                    </p>
-                    <p className="text-dark-300 text-xs">3 days ago</p>
-                  </div>
-                </div>
-                <div className="flex">
-                  <div className="mr-3 mt-0.5">
-                    <div className="h-2 w-2 rounded-full bg-primary-blue"></div>
-                  </div>
-                  <div>
-                    <p className="text-sm">
-                      Earned{' '}
-                      <span className="text-primary-blue">
-                        Algorithm Master
-                      </span>{' '}
-                      badge
-                    </p>
-                    <p className="text-dark-300 text-xs">1 week ago</p>
-                  </div>
-                </div>
-                <div className="flex">
-                  <div className="mr-3 mt-0.5">
-                    <div className="h-2 w-2 rounded-full bg-primary-blue"></div>
-                  </div>
-                  <div>
-                    <p className="text-sm">
-                      Won{' '}
-                      <span className="text-primary-blue">
-                        Stanford vs MIT Challenge
-                      </span>
-                    </p>
-                    <p className="text-dark-300 text-xs">2 weeks ago</p>
-                  </div>
-                </div>
-              </div>
+                ))
+              )}
             </div>
           </div>
         </div>
       </div>
-    </div>;
+      
+      {/* Profile Edit Modal */}
+      {isCurrentUser && (
+        <ProfileEditModal
+          isOpen={isEditing}
+          onClose={() => setIsEditing(false)}
+          user={user}
+          onProfileUpdated={handleProfileUpdated}
+        />
+      )}
+
+      {/* Followers Modal */}
+      <FollowersModal
+        isOpen={showFollowersModal}
+        onClose={() => setShowFollowersModal(false)}
+        userId={user.id}
+        type={followersModalType}
+        userName={user.name}
+      />
+    </div>
+  );
 };
 export default Profile;

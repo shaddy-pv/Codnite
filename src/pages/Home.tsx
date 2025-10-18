@@ -1,205 +1,332 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Flame, Clock, UserPlus, Filter, Code, PenTool } from 'lucide-react';
-import Card from '../components/ui/Card';
-import Button from '../components/ui/Button';
+import { Button } from '../components/ui/Button';
 import Badge from '../components/ui/Badge';
 import Avatar from '../components/ui/Avatar';
+import { PostSkeleton } from '../components/ui/Loading';
+import { EmptyPosts, EmptyChallenges } from '../components/ui/EmptyState';
+import { Pagination } from '../components/ui/Pagination';
+import PostCard from '../components/PostCard';
+import PostCreateModal from '../components/PostCreateModal';
+import { api, Post, Challenge, User, usersApi } from '../services/api';
+import { useToast } from '../components/ui/Toast';
+import { ErrorBoundary } from '../components/ui/ErrorBoundary';
+import { LoadingWrapper, PostLoadingWrapper } from '../components/ui/LoadingWrapper';
+import { useAsync, useLoadingStates } from '../hooks/useLoadingStates';
+import { NetworkStatus } from '../components/ui/NetworkStatus';
 const Home: React.FC = () => {
   const [activeTab, setActiveTab] = useState('trending');
-  const feedItems = [{
-    type: 'post',
-    author: {
-      name: 'Alex Johnson',
-      avatar: 'https://images.unsplash.com/photo-1599566150163-29194dcaad36?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=facearea&facepad=2&w=300&h=300&q=80',
-      college: 'MIT',
-      username: 'alexj'
-    },
-    content: {
-      text: "Just solved this tricky dynamic programming problem. Here's my approach:",
-      code: 'function coinChange(coins, amount) {\n  const dp = Array(amount + 1).fill(Infinity);\n  dp[0] = 0;\n  \n  for (const coin of coins) {\n    for (let i = coin; i <= amount; i++) {\n      dp[i] = Math.min(dp[i], dp[i - coin] + 1);\n    }\n  }\n  \n  return dp[amount] === Infinity ? -1 : dp[amount];\n}',
-      language: 'JavaScript'
-    },
-    tags: ['DynamicProgramming', 'Algorithms', 'JavaScript'],
-    stats: {
-      likes: 142,
-      comments: 38
-    },
-    time: '2 hours ago'
-  }, {
-    type: 'problem',
-    author: {
-      name: 'Sophia Chen',
-      avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=facearea&facepad=2&w=300&h=300&q=80',
-      college: 'Stanford',
-      username: 'sophiac'
-    },
-    content: {
-      text: 'Can you optimize this sorting algorithm to improve its time complexity?',
-      code: 'function bubbleSort(arr) {\n  const n = arr.length;\n  \n  for (let i = 0; i < n; i++) {\n    for (let j = 0; j < n - i - 1; j++) {\n      if (arr[j] > arr[j + 1]) {\n        // swap\n        [arr[j], arr[j + 1]] = [arr[j + 1], arr[j]];\n      }\n    }\n  }\n  \n  return arr;\n}',
-      language: 'JavaScript'
-    },
-    tags: ['Sorting', 'Optimization', 'Challenge'],
-    stats: {
-      likes: 89,
-      comments: 24
-    },
-    time: '5 hours ago'
-  }, {
-    type: 'post',
-    author: {
-      name: 'Marcus Lee',
-      avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=facearea&facepad=2&w=300&h=300&q=80',
-      college: 'UC Berkeley',
-      username: 'marcusl'
-    },
-    content: {
-      text: 'Just completed my first tech interview with Google! Here are some tips for anyone preparing:',
-      image: 'https://images.unsplash.com/photo-1515378791036-0648a3ef77b2?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1470&q=80'
-    },
-    tags: ['Interview', 'Career', 'Google'],
-    stats: {
-      likes: 215,
-      comments: 42
-    },
-    time: '1 day ago'
-  }];
-  const challengeData = {
-    title: 'Weekly College Challenge',
-    description: 'MIT vs Stanford: Algorithm Speedrun',
-    timeRemaining: '2d 4h remaining',
-    participants: 128,
-    prize: '5000 points + Recruiter Visibility'
+  const [posts, setPosts] = useState<Post[]>([]);
+  const [challenges, setChallenges] = useState<Challenge[]>([]);
+  const [suggestedUsers, setSuggestedUsers] = useState<User[]>([]);
+  const [followingUsers, setFollowingUsers] = useState<Set<string>>(new Set());
+  const [isLoading, setIsLoading] = useState(true);
+  const [isCreatingPost, setIsCreatingPost] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const { success, error } = useToast();
+
+  // Load posts based on active tab
+  const loadPosts = async (page: number = 1) => {
+    try {
+      setIsLoading(true);
+      const response = await api.getPosts(page, 10);
+      setPosts(response.posts);
+      setTotalPages(response.pagination.pages);
+      setCurrentPage(page);
+    } catch (err: any) {
+      error('Failed to load posts', err.message);
+    } finally {
+      setIsLoading(false);
+    }
   };
-  const suggestedUsers = [{
-    name: 'Emma Watson',
-    username: 'emmaw',
-    avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=facearea&facepad=2&w=300&h=300&q=80',
-    college: 'Harvard',
-    rank: '#3 in Algorithms'
-  }, {
-    name: 'David Kim',
-    username: 'davidk',
-    avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=facearea&facepad=2&w=300&h=300&q=80',
-    college: 'Princeton',
-    rank: '#1 in Data Structures'
-  }];
-  return <div className="max-w-screen-xl mx-auto">
+
+  // Load challenges
+  const loadChallenges = async () => {
+    try {
+      const response = await api.getChallenges();
+      setChallenges(response);
+    } catch (err: any) {
+      error('Failed to load challenges', err.message);
+    }
+  };
+
+  // Load suggested users
+  const loadSuggestedUsers = async () => {
+    try {
+      const response = await usersApi.getSuggestedUsers(5);
+      setSuggestedUsers(response.suggestedUsers);
+    } catch (err: any) {
+      error('Failed to load suggested users', err.message);
+    }
+  };
+
+  // Load data on component mount
+  useEffect(() => {
+    loadPosts();
+    loadChallenges();
+    loadSuggestedUsers();
+  }, []);
+
+  // Reload posts when tab changes
+  useEffect(() => {
+    loadPosts(1);
+  }, [activeTab]);
+
+  const handlePostCreated = (newPost: Post) => {
+    setPosts(prev => [newPost, ...prev]);
+    success('Post created successfully!');
+  };
+
+  const handlePageChange = (page: number) => {
+    loadPosts(page);
+  };
+
+  const handleFollowUser = async (userId: string) => {
+    try {
+      await api.followUser(userId);
+      setFollowingUsers(prev => new Set([...prev, userId]));
+      success('Successfully followed user!');
+    } catch (err: any) {
+      error('Failed to follow user', err.message);
+    }
+  };
+
+  const handleUnfollowUser = async (userId: string) => {
+    try {
+      await api.unfollowUser(userId);
+      setFollowingUsers(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(userId);
+        return newSet;
+      });
+      success('Successfully unfollowed user!');
+    } catch (err: any) {
+      error('Failed to unfollow user', err.message);
+    }
+  };
+
+  const formatTimeRemaining = (endDate: string) => {
+    const end = new Date(endDate);
+    const now = new Date();
+    const diffInMs = end.getTime() - now.getTime();
+    
+    if (diffInMs <= 0) return 'Ended';
+    
+    const days = Math.floor(diffInMs / (1000 * 60 * 60 * 24));
+    const hours = Math.floor((diffInMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+    
+    if (days > 0) return `${days}d ${hours}h remaining`;
+    return `${hours}h remaining`;
+  };
+  return (
+    <div className="max-w-screen-xl mx-auto">
       <div className="flex flex-col md:flex-row gap-6">
         {/* Main Feed */}
         <div className="flex-1">
           {/* Tabs */}
-          <div className="flex items-center mb-6 border-b border-dark-600">
-            <button onClick={() => setActiveTab('trending')} className={`flex items-center py-3 px-4 border-b-2 transition-colors ${activeTab === 'trending' ? 'border-primary-blue text-primary-blue' : 'border-transparent text-dark-300 hover:text-dark-100'}`}>
-              <Flame className="h-4 w-4 mr-2" />
-              <span>Trending</span>
-            </button>
-            <button onClick={() => setActiveTab('newest')} className={`flex items-center py-3 px-4 border-b-2 transition-colors ${activeTab === 'newest' ? 'border-primary-blue text-primary-blue' : 'border-transparent text-dark-300 hover:text-dark-100'}`}>
-              <Clock className="h-4 w-4 mr-2" />
-              <span>Newest</span>
-            </button>
-            <button onClick={() => setActiveTab('following')} className={`flex items-center py-3 px-4 border-b-2 transition-colors ${activeTab === 'following' ? 'border-primary-blue text-primary-blue' : 'border-transparent text-dark-300 hover:text-dark-100'}`}>
-              <UserPlus className="h-4 w-4 mr-2" />
-              <span>Following</span>
-            </button>
-            <div className="ml-auto flex items-center">
-              <button className="flex items-center text-dark-300 hover:text-dark-100 transition-colors">
-                <Filter className="h-4 w-4 mr-1" />
-                <span>Filter</span>
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex space-x-1 bg-gray-100 dark:bg-gray-800 rounded-lg p-1">
+              <button
+                onClick={() => setActiveTab('trending')}
+                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                  activeTab === 'trending'
+                    ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm'
+                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+                }`}
+              >
+                <Flame className="h-4 w-4 mr-2 inline" />
+                Trending
+              </button>
+              <button
+                onClick={() => setActiveTab('newest')}
+                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                  activeTab === 'newest'
+                    ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm'
+                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+                }`}
+              >
+                <Clock className="h-4 w-4 mr-2 inline" />
+                Newest
+              </button>
+              <button
+                onClick={() => setActiveTab('following')}
+                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                  activeTab === 'following'
+                    ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm'
+                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+                }`}
+              >
+                <UserPlus className="h-4 w-4 mr-2 inline" />
+                Following
               </button>
             </div>
-          </div>
-          {/* Create Post */}
-          <div className="bg-dark-600 rounded-xl p-4 mb-6 border border-dark-500">
-            <div className="flex gap-4">
-              <Button variant="outline" leftIcon={<PenTool className="h-4 w-4" />} fullWidth>
-                Write a post
-              </Button>
-              <Button variant="outline" leftIcon={<Code className="h-4 w-4" />} fullWidth>
-                Share code
+            <div className="flex items-center space-x-2">
+              <button className="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors">
+                <Filter className="h-5 w-5" />
+              </button>
+              <Button
+                onClick={() => setIsCreatingPost(true)}
+                className="bg-blue-600 hover:bg-blue-700 text-white"
+                leftIcon={<PenTool className="h-4 w-4" />}
+              >
+                Create Post
               </Button>
             </div>
           </div>
-          {/* Feed Items */}
-          <div className="space-y-6">
-            {feedItems.map((item, index) => <Card key={index} {...item} />)}
-          </div>
+
+          {/* Feed Content */}
+          {isLoading ? (
+            <>
+              <PostSkeleton />
+              <PostSkeleton />
+              <PostSkeleton />
+            </>
+          ) : posts.length === 0 ? (
+            <EmptyPosts />
+          ) : (
+            <>
+              <div className="space-y-6">
+                {posts.map((post) => (
+                  <PostCard
+                    key={post.id}
+                    post={post}
+                    onLike={() => {
+                      // Handle like
+                    }}
+                    onComment={() => {
+                      // Handle comment
+                    }}
+                    onShare={() => {
+                      // Handle share
+                    }}
+                    onBookmark={() => {
+                      // Handle bookmark
+                    }}
+                  />
+                ))}
+              </div>
+              
+              {totalPages > 1 && (
+                <div className="mt-8">
+                  <Pagination
+                    currentPage={currentPage}
+                    totalPages={totalPages}
+                    onPageChange={handlePageChange}
+                  />
+                </div>
+              )}
+            </>
+          )}
         </div>
+
         {/* Sidebar */}
-        <div className="md:w-80 space-y-6">
-          {/* Challenge Card */}
-          <div className="bg-dark-600 rounded-xl border border-dark-500 overflow-hidden">
-            <div className="bg-gradient-to-r from-primary-blue to-primary-purple p-4">
-              <h3 className="text-white font-bold">Featured Challenge</h3>
+        <div className="w-full md:w-80 space-y-6">
+          {/* Weekly Challenge */}
+          <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
+            <div className="flex items-center mb-4">
+              <Code className="h-5 w-5 text-purple-600 mr-2" />
+              <h3 className="font-semibold text-gray-900 dark:text-white">
+                Weekly Challenge
+              </h3>
             </div>
-            <div className="p-4">
-              <h4 className="font-medium mb-1">{challengeData.title}</h4>
-              <p className="text-dark-300 text-sm mb-3">
-                {challengeData.description}
-              </p>
-              <div className="flex justify-between text-sm mb-4">
-                <div className="text-dark-300">
-                  <span className="text-primary-blue">
-                    {challengeData.timeRemaining}
-                  </span>
-                </div>
-                <div className="text-dark-300">
-                  <span className="text-primary-blue">
-                    {challengeData.participants}
-                  </span>{' '}
-                  participants
-                </div>
-              </div>
-              <div className="mb-4">
-                <div className="text-xs text-dark-300 mb-1">Prize</div>
-                <div className="text-sm font-medium">{challengeData.prize}</div>
-              </div>
-              <Button variant="primary" fullWidth>
-                Join Challenge
-              </Button>
-            </div>
-          </div>
-          {/* Suggested Users */}
-          <div className="bg-dark-600 rounded-xl border border-dark-500 overflow-hidden">
-            <div className="p-4 border-b border-dark-500">
-              <h3 className="font-medium">Suggested Coders</h3>
-            </div>
-            <div className="p-2">
-              {suggestedUsers.map((user, index) => <div key={index} className="p-2 hover:bg-dark-500 rounded-lg">
-                  <div className="flex items-center">
-                    <Avatar src={user.avatar} size="sm" />
-                    <div className="ml-3 flex-1">
-                      <div className="font-medium text-sm">{user.name}</div>
-                      <div className="text-dark-300 text-xs">
-                        {user.college} • {user.rank}
-                      </div>
+            
+            {challenges.length === 0 ? (
+              <EmptyChallenges />
+            ) : (
+              challenges.slice(0, 1).map((challenge) => (
+                <div key={challenge.id}>
+                  <h4 className="font-medium text-gray-900 dark:text-white mb-2">
+                    {challenge.title}
+                  </h4>
+                  <p className="text-gray-600 dark:text-gray-400 text-sm mb-4">
+                    {challenge.description}
+                  </p>
+                  <div className="space-y-3 mb-4">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-500 dark:text-gray-400">Time Remaining</span>
+                      <span className="font-medium text-orange-600">
+                        {formatTimeRemaining(challenge.endDate)}
+                      </span>
                     </div>
-                    <Button variant="outline" size="sm">
-                      Follow
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-500 dark:text-gray-400">Participants</span>
+                      <span className="font-medium text-gray-900 dark:text-white">
+                        {challenge._count?.submissions || 0}
+                      </span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-500 dark:text-gray-400">Points</span>
+                      <span className="font-medium text-green-600">{challenge.points}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-500 dark:text-gray-400">Difficulty</span>
+                      <Badge text={challenge.difficulty} color="blue" />
+                    </div>
+                  </div>
+                  <Button className="w-full bg-purple-600 hover:bg-purple-700 text-white">
+                    Join Challenge
+                  </Button>
+                </div>
+              ))
+            )}
+          </div>
+
+          {/* Suggested Users */}
+          <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
+            <h3 className="font-semibold text-gray-900 dark:text-white mb-4">
+              Suggested for You
+            </h3>
+            {!suggestedUsers || suggestedUsers.length === 0 ? (
+              <p className="text-gray-500 dark:text-gray-400 text-sm">
+                No suggestions available
+              </p>
+            ) : (
+              <div className="space-y-4">
+                {suggestedUsers.map((user, index) => (
+                  <div key={index} className="flex items-center space-x-3">
+                    <Avatar
+                      src={user.avatarUrl}
+                      name={user.name}
+                      size="md"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <h4 className="font-medium text-gray-900 dark:text-white text-sm">
+                        {user.name}
+                      </h4>
+                      <p className="text-gray-500 dark:text-gray-400 text-xs">
+                        @{user.username} • {user.collegeId}
+                      </p>
+                      <p className="text-gray-600 dark:text-gray-300 text-xs">
+                        {user.points} points
+                      </p>
+                    </div>
+                    <Button 
+                      size="sm" 
+                      variant={followingUsers.has(user.id) ? "primary" : "outline"}
+                      onClick={() => 
+                        followingUsers.has(user.id) 
+                          ? handleUnfollowUser(user.id) 
+                          : handleFollowUser(user.id)
+                      }
+                    >
+                      {followingUsers.has(user.id) ? 'Following' : 'Follow'}
                     </Button>
                   </div>
-                </div>)}
-            </div>
-          </div>
-          {/* Trending Tags */}
-          <div className="bg-dark-600 rounded-xl border border-dark-500 overflow-hidden">
-            <div className="p-4 border-b border-dark-500">
-              <h3 className="font-medium">Trending Tags</h3>
-            </div>
-            <div className="p-4">
-              <div className="flex flex-wrap gap-2">
-                <Badge text="DynamicProgramming" color="purple" />
-                <Badge text="MachineLearning" color="blue" />
-                <Badge text="React" color="cyan" />
-                <Badge text="Algorithms" color="purple" />
-                <Badge text="SystemDesign" color="blue" />
-                <Badge text="Python" color="cyan" />
-                <Badge text="JavaScript" color="purple" />
-                <Badge text="FrontendDev" color="blue" />
+                ))}
               </div>
-            </div>
+            )}
           </div>
         </div>
       </div>
-    </div>;
+
+      {/* Post Creation Modal */}
+      <PostCreateModal
+        isOpen={isCreatingPost}
+        onClose={() => setIsCreatingPost(false)}
+        onPostCreated={handlePostCreated}
+      />
+    </div>
+  );
 };
 export default Home;

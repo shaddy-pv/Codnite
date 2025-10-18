@@ -1,0 +1,174 @@
+# Staging Alert Rules
+
+groups:
+  - name: codnite.staging.rules
+    rules:
+      - alert: ApplicationDownStaging
+        expr: up{job="codnite-app-staging"} == 0
+        for: 2m
+        labels:
+          severity: critical
+          environment: staging
+        annotations:
+          summary: "Codnite staging application is down"
+          description: "The Codnite staging application has been down for more than 2 minutes."
+
+      - alert: HighErrorRateStaging
+        expr: rate(http_requests_total{status=~"5.."}[5m]) / rate(http_requests_total[5m]) > 0.05
+        for: 3m
+        labels:
+          severity: high
+          environment: staging
+        annotations:
+          summary: "High error rate detected in staging"
+          description: "Error rate is above 5% for more than 3 minutes in staging environment."
+
+      - alert: HighResponseTimeStaging
+        expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m])) > 2
+        for: 3m
+        labels:
+          severity: high
+          environment: staging
+        annotations:
+          summary: "High response time detected in staging"
+          description: "95th percentile response time is above 2 seconds for more than 3 minutes in staging."
+
+      - alert: HighCPUUsageStaging
+        expr: 100 - (avg by(instance) (rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 90
+        for: 5m
+        labels:
+          severity: warning
+          environment: staging
+        annotations:
+          summary: "High CPU usage detected in staging"
+          description: "CPU usage is above 90% for more than 5 minutes in staging."
+
+      - alert: HighMemoryUsageStaging
+        expr: (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100 > 95
+        for: 5m
+        labels:
+          severity: warning
+          environment: staging
+        annotations:
+          summary: "High memory usage detected in staging"
+          description: "Memory usage is above 95% for more than 5 minutes in staging."
+
+      - alert: HighDiskUsageStaging
+        expr: (1 - (node_filesystem_avail_bytes / node_filesystem_size_bytes)) * 100 > 90
+        for: 5m
+        labels:
+          severity: warning
+          environment: staging
+        annotations:
+          summary: "High disk usage detected in staging"
+          description: "Disk usage is above 90% for more than 5 minutes in staging."
+
+      - alert: DatabaseConnectionFailureStaging
+        expr: up{job="postgres-exporter-staging"} == 0
+        for: 2m
+        labels:
+          severity: critical
+          environment: staging
+        annotations:
+          summary: "Database connection failure in staging"
+          description: "Cannot connect to PostgreSQL database in staging environment."
+
+      - alert: RedisConnectionFailureStaging
+        expr: up{job="redis-exporter-staging"} == 0
+        for: 2m
+        labels:
+          severity: high
+          environment: staging
+        annotations:
+          summary: "Redis connection failure in staging"
+          description: "Cannot connect to Redis cache in staging environment."
+
+      - alert: SlowDatabaseQueriesStaging
+        expr: pg_stat_statements_mean_time > 2
+        for: 3m
+        labels:
+          severity: warning
+          environment: staging
+        annotations:
+          summary: "Slow database queries detected in staging"
+          description: "Database queries are taking longer than 2 seconds in staging."
+
+      - alert: HighDatabaseConnectionsStaging
+        expr: pg_stat_database_numbackends / pg_settings_max_connections * 100 > 90
+        for: 3m
+        labels:
+          severity: warning
+          environment: staging
+        annotations:
+          summary: "High database connection usage in staging"
+          description: "Database connection usage is above 90% in staging."
+
+      - alert: LowCacheHitRateStaging
+        expr: redis_keyspace_hits_total / (redis_keyspace_hits_total + redis_keyspace_misses_total) * 100 < 70
+        for: 5m
+        labels:
+          severity: warning
+          environment: staging
+        annotations:
+          summary: "Low cache hit rate in staging"
+          description: "Redis cache hit rate is below 70% in staging."
+
+      - alert: NginxErrorRateStaging
+        expr: rate(nginx_http_requests_total{status=~"5.."}[5m]) / rate(nginx_http_requests_total[5m]) > 0.05
+        for: 3m
+        labels:
+          severity: high
+          environment: staging
+        annotations:
+          summary: "High Nginx error rate in staging"
+          description: "Nginx error rate is above 5% for more than 3 minutes in staging."
+
+      - alert: StagingDeploymentFailed
+        expr: up{job="codnite-app-staging"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          environment: staging
+        annotations:
+          summary: "Staging deployment failed"
+          description: "The staging deployment has failed and the application is not responding."
+
+      - alert: StagingHealthCheckFailed
+        expr: up{job="codnite-app-staging"} == 0
+        for: 30s
+        labels:
+          severity: warning
+          environment: staging
+        annotations:
+          summary: "Staging health check failed"
+          description: "The staging health check has failed, but the application may still be running."
+
+      - alert: StagingPerformanceDegraded
+        expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m])) > 1
+        for: 2m
+        labels:
+          severity: warning
+          environment: staging
+        annotations:
+          summary: "Staging performance degraded"
+          description: "Staging performance has degraded with response times above 1 second."
+
+      - alert: StagingResourceExhaustion
+        expr: (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100 > 85
+        for: 3m
+        labels:
+          severity: warning
+          environment: staging
+        annotations:
+          summary: "Staging resource exhaustion"
+          description: "Staging environment is running low on memory resources."
+
+      - alert: StagingServiceUnavailable
+        expr: up{job="codnite-app-staging"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          environment: staging
+        annotations:
+          summary: "Staging service unavailable"
+          description: "The staging service is unavailable and not responding to requests."
