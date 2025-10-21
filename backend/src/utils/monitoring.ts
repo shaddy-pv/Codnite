@@ -1,7 +1,7 @@
-# Codnite Production Monitoring Setup
-# ===================================
+//# Codnite Production Monitoring Setup
+//# ===================================
 
-# Sentry Configuration
+//# Sentry Configuration
 import * as Sentry from '@sentry/node';
 import { ProfilingIntegration } from '@sentry/profiling-node';
 
@@ -30,12 +30,12 @@ Sentry.init({
 
 export { Sentry };
 
-# New Relic Configuration
+//# New Relic Configuration
 if (process.env.NEW_RELIC_LICENSE_KEY) {
   require('newrelic');
 }
 
-# Performance Monitoring
+//# Performance Monitoring
 export const performanceMonitor = {
   startTimer: (name: string) => {
     const start = process.hrtime.bigint();
@@ -62,7 +62,7 @@ export const performanceMonitor = {
   }
 };
 
-# Health Check Endpoint
+//# Health Check Endpoint
 export const healthCheck = {
   async checkDatabase() {
     try {
