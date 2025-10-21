@@ -4,6 +4,7 @@ import { api } from '../services/api';
 import { useToast } from './ui/Toast';
 import Button from './ui/Button';
 import Loading from './ui/Loading';
+import { PortalModal } from './ui/PortalModal';
 
 interface AvatarUploadModalProps {
   isOpen: boolean;
@@ -189,21 +190,12 @@ const AvatarUploadModal: React.FC<AvatarUploadModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white dark:bg-gray-800 rounded-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
-        <div className="p-6">
-          {/* Header */}
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
-              Update Avatar
-            </h2>
-            <button
-              onClick={onClose}
-              className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-            >
-              <X className="w-5 h-5 text-gray-500" />
-            </button>
-          </div>
+    <PortalModal
+      isOpen={isOpen}
+      onClose={onClose}
+      title="Update Avatar"
+      size="md"
+    >
 
           {/* Current Avatar */}
           {currentAvatarUrl && (
@@ -241,7 +233,7 @@ const AvatarUploadModal: React.FC<AvatarUploadModalProps> = ({
             <div
               className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
                 isDragging
-                  ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
+                  ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20'
                   : 'border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500'
               }`}
               onDragOver={handleDragOver}
@@ -274,7 +266,7 @@ const AvatarUploadModal: React.FC<AvatarUploadModalProps> = ({
                     <Button
                       onClick={handleUpload}
                       disabled={isUploading}
-                      className="bg-blue-600 hover:bg-blue-700"
+                      className="bg-primary-600 hover:bg-primary-700"
                     >
                       {isUploading ? (
                         <>
@@ -301,7 +293,7 @@ const AvatarUploadModal: React.FC<AvatarUploadModalProps> = ({
                     </p>
                     <button
                       onClick={() => fileInputRef.current?.click()}
-                      className="text-blue-600 hover:text-blue-700 text-sm font-medium"
+                      className="text-primary-600 hover:text-primary-700 text-sm font-medium"
                     >
                       browse files
                     </button>
@@ -336,7 +328,7 @@ const AvatarUploadModal: React.FC<AvatarUploadModalProps> = ({
               </div>
               <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
                 <div
-                  className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                  className="bg-primary-600 h-2 rounded-full transition-all duration-300"
                   style={{ width: `${uploadProgress}%` }}
                 />
               </div>
@@ -360,9 +352,7 @@ const AvatarUploadModal: React.FC<AvatarUploadModalProps> = ({
               <p>S3 Configured: {uploadConfig.s3Configured ? 'Yes' : 'No'}</p>
             </div>
           )}
-        </div>
-      </div>
-    </div>
+    </PortalModal>
   );
 };
 

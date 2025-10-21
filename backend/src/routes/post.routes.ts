@@ -13,24 +13,72 @@ router.get('/', async (req, res) => {
   try {
     const page = parseInt(req.query.page as string) || 1;
     const limit = parseInt(req.query.limit as string) || 10;
+    const sort = req.query.sort as string || 'newest';
     const offset = (page - 1) * limit;
 
-    const postsQuery = `
-      SELECT 
-        p.id, p.title, p.content, p.code, p.language, p.tags, p.created_at, p.updated_at,
-        u.id as author_id, u.username as author_username, u.name as author_name, u.college_id as author_college_id,
-        (SELECT COUNT(*) FROM comments c WHERE c.post_id = p.id) as comment_count,
-        (SELECT COUNT(*) FROM likes l WHERE l.post_id = p.id) as like_count
-      FROM posts p
-      JOIN users u ON p.author_id = u.id
-      ORDER BY p.created_at DESC
-      LIMIT $1 OFFSET $2
-    `;
+    // Determine ORDER BY clause based on sort parameter
+    let orderBy = 'ORDER BY p.created_at DESC';
+    switch (sort) {
+      case 'trending':
+        orderBy = 'ORDER BY ((SELECT COUNT(*) FROM likes l WHERE l.post_id = p.id) + (SELECT COUNT(*) FROM comments c WHERE c.post_id = p.id)) DESC, p.created_at DESC';
+        break;
+      case 'newest':
+        orderBy = 'ORDER BY p.created_at DESC';
+        break;
+      case 'following':
+        // For following, we need to get posts from users the current user follows
+        // This will be handled differently - we'll need user authentication
+        orderBy = 'ORDER BY p.created_at DESC';
+        break;
+      default:
+        orderBy = 'ORDER BY p.created_at DESC';
+    }
 
-    const countQuery = 'SELECT COUNT(*) as total FROM posts';
+    let postsQuery;
+    let queryParams = [limit, offset];
+    
+    if (sort === 'following') {
+      // For following posts, we need authentication
+      const userId = req.user?.userId;
+      if (!userId) {
+        return res.status(401).json({ error: 'Authentication required for following feed' });
+      }
+      
+      postsQuery = `
+        SELECT 
+          p.id, p.title, p.content, p.code, p.language, p.tags, p.college_id, p.created_at, p.updated_at,
+          u.id as author_id, u.username as author_username, u.name as author_name, u.college_id as author_college_id,
+          (SELECT COUNT(*) FROM comments c WHERE c.post_id = p.id) as comment_count,
+          (SELECT COUNT(*) FROM likes l WHERE l.post_id = p.id) as like_count
+        FROM posts p
+        JOIN users u ON p.author_id = u.id
+        WHERE p.college_id IS NULL
+        AND p.author_id IN (
+          SELECT following_id FROM follows WHERE follower_id = $3
+        )
+        ${orderBy}
+        LIMIT $1 OFFSET $2
+      `;
+      queryParams = [limit, offset, userId];
+    } else {
+      postsQuery = `
+        SELECT 
+          p.id, p.title, p.content, p.code, p.language, p.tags, p.college_id, p.created_at, p.updated_at,
+          u.id as author_id, u.username as author_username, u.name as author_name, u.college_id as author_college_id,
+          (SELECT COUNT(*) FROM comments c WHERE c.post_id = p.id) as comment_count,
+          (SELECT COUNT(*) FROM likes l WHERE l.post_id = p.id) as like_count
+        FROM posts p
+        JOIN users u ON p.author_id = u.id
+        WHERE p.college_id IS NULL
+        ${orderBy}
+        LIMIT $1 OFFSET $2
+      `;
+    }
+
+    const countQuery = 'SELECT COUNT(*) as total FROM posts WHERE college_id IS NULL';
 
     const [postsResult, countResult] = await Promise.all([
-      query(postsQuery, [limit, offset]),
+      query(postsQuery, queryParams),
       query(countQuery)
     ]);
 
@@ -154,7 +202,7 @@ router.get('/:id', async (req, res) => {
 // Create new post
 router.post('/', authenticate, async (req: any, res) => {
   try {
-    const { title, content, code, language, tags } = req.body;
+    const { title, content, code, language, tags, collegeId } = req.body;
     const userId = req.user.userId;
 
     if (!title || !content) {
@@ -162,9 +210,9 @@ router.post('/', authenticate, async (req: any, res) => {
     }
 
     const createQuery = `
-      INSERT INTO posts (title, content, code, language, tags, author_id, created_at, updated_at)
-      VALUES ($1, $2, $3, $4, $5, $6, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-      RETURNING id, title, content, code, language, tags, created_at, updated_at
+      INSERT INTO posts (title, content, code, language, tags, author_id, college_id, created_at, updated_at)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+      RETURNING id, title, content, code, language, tags, college_id, created_at, updated_at
     `;
 
     const result = await query(createQuery, [
@@ -173,7 +221,8 @@ router.post('/', authenticate, async (req: any, res) => {
       code || '',
       language || 'javascript',
       tags || [],
-      userId
+      userId,
+      collegeId || null
     ]);
 
     const post = result.rows[0];
@@ -400,7 +449,9 @@ router.get('/bookmarks', authenticate, async (req: any, res) => {
   try {
     const userId = req.user.userId;
     const { page = 1, limit = 10 } = req.query;
-    const offset = (page - 1) * limit;
+    const pageNum = parseInt(page as string) || 1;
+    const limitNum = parseInt(limit as string) || 10;
+    const offset = (pageNum - 1) * limitNum;
 
     const bookmarks = await query(`
       SELECT 
@@ -415,7 +466,7 @@ router.get('/bookmarks', authenticate, async (req: any, res) => {
       WHERE b.user_id = $1
       ORDER BY b.created_at DESC
       LIMIT $2 OFFSET $3
-    `, [userId, limit, offset]);
+    `, [userId, limitNum, offset]);
 
     const totalResult = await query(
       'SELECT COUNT(*) as total FROM bookmarks WHERE user_id = $1',
@@ -425,8 +476,8 @@ router.get('/bookmarks', authenticate, async (req: any, res) => {
     res.json({
       posts: bookmarks.rows,
       total: parseInt(totalResult.rows[0].total),
-      page: parseInt(page),
-      limit: parseInt(limit)
+      page: pageNum,
+      limit: limitNum
     });
   } catch (error) {
     logger.error('Error fetching bookmarks:', error);

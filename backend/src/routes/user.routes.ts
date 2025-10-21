@@ -12,7 +12,7 @@ router.get('/me', authenticateToken, async (req: any, res) => {
 
     const result = await query(
       `SELECT 
-        u.id, u.email, u.username, u.name, u.bio, u.avatar_url, u.github_username, 
+        u.id, u.email, u.username, u.name, u.bio, u.avatar_url, u.cover_photo_url, u.github_username, 
         u.linkedin_url, u.college_id, u.points, u.created_at, u.updated_at,
         c.name as college_name, c.short_name as college_short_name
        FROM users u
@@ -33,6 +33,7 @@ router.get('/me', authenticateToken, async (req: any, res) => {
       name: user.name,
       bio: user.bio,
       avatarUrl: user.avatar_url,
+      coverPhotoUrl: user.cover_photo_url,
       githubUsername: user.github_username,
       linkedinUrl: user.linkedin_url,
       collegeId: user.college_id,
@@ -161,7 +162,7 @@ router.get('/:userId', async (req, res) => {
     const { userId } = req.params;
 
     const result = await query(
-      `SELECT id, username, name, bio, avatar_url, github_username, linkedin_url, college_id, points, created_at 
+      `SELECT id, username, name, bio, avatar_url, cover_photo_url, github_username, linkedin_url, college_id, points, created_at 
        FROM users WHERE id = $1`,
       [userId]
     );
@@ -177,6 +178,7 @@ router.get('/:userId', async (req, res) => {
       name: user.name,
       bio: user.bio,
       avatarUrl: user.avatar_url,
+      coverPhotoUrl: user.cover_photo_url,
       githubUsername: user.github_username,
       linkedinUrl: user.linkedin_url,
       collegeId: user.college_id,
@@ -186,6 +188,167 @@ router.get('/:userId', async (req, res) => {
   } catch (error) {
     logger.error('Error fetching user:', error);
     res.status(500).json({ error: 'Failed to fetch user' });
+  }
+});
+
+// Get current user's statistics (me)
+router.get('/me/stats', authenticateToken, async (req: any, res) => {
+  try {
+    const userId = req.user.userId;
+
+    const [rankResult, problemsSolvedResult, contributionsResult, followersResult, followingResult, badgesResult, achievementsResult] = await Promise.all([
+      query('SELECT COUNT(*) + 1 as rank FROM users WHERE points > (SELECT COALESCE(points, 0) FROM users WHERE id = $1)', [userId]),
+      query('SELECT COUNT(*) as problems_solved FROM submissions s WHERE s.user_id = $1 AND s.status = \'accepted\'', [userId]),
+      query('SELECT COUNT(*) as contributions FROM posts WHERE author_id = $1', [userId]),
+      query('SELECT COUNT(*) as followers FROM follows WHERE following_id = $1', [userId]),
+      query('SELECT COUNT(*) as following FROM follows WHERE follower_id = $1', [userId]),
+      query('SELECT COUNT(*) as badges FROM user_badges WHERE user_id = $1', [userId]),
+      query('SELECT COUNT(*) as achievements FROM user_achievements WHERE user_id = $1', [userId])
+    ]);
+
+    res.json({
+      rank: parseInt(rankResult.rows[0].rank),
+      problemsSolved: parseInt(problemsSolvedResult.rows[0].problems_solved),
+      contributions: parseInt(contributionsResult.rows[0].contributions),
+      followers: parseInt(followersResult.rows[0].followers),
+      following: parseInt(followingResult.rows[0].following),
+      badges: parseInt(badgesResult.rows[0].badges),
+      achievements: parseInt(achievementsResult.rows[0].achievements)
+    });
+  } catch (error) {
+    logger.error('Error fetching current user stats:', error);
+    res.status(500).json({ error: 'Failed to fetch user stats' });
+  }
+});
+
+// Get current user's badges (me)
+router.get('/me/badges', authenticateToken, async (req: any, res) => {
+  try {
+    const userId = req.user.userId;
+
+    const badges = await query(`
+      SELECT b.id, b.name, b.description, b.icon, b.color, ub.earned_at
+      FROM user_badges ub
+      JOIN badges b ON ub.badge_id = b.id
+      WHERE ub.user_id = $1
+      ORDER BY ub.earned_at DESC
+    `, [userId]);
+
+    res.json(badges.rows);
+  } catch (error) {
+    logger.error('Error fetching current user badges:', error);
+    res.status(500).json({ error: 'Failed to fetch user badges' });
+  }
+});
+
+// Get current user's achievements (me)
+router.get('/me/achievements', authenticateToken, async (req: any, res) => {
+  try {
+    const userId = req.user.userId;
+
+    const achievements = await query(`
+      SELECT a.id, a.name, a.description, a.points, a.icon, ua.earned_at
+      FROM user_achievements ua
+      JOIN achievements a ON ua.achievement_id = a.id
+      WHERE ua.user_id = $1
+      ORDER BY ua.earned_at DESC
+    `, [userId]);
+
+    res.json(achievements.rows);
+  } catch (error) {
+    logger.error('Error fetching current user achievements:', error);
+    res.status(500).json({ error: 'Failed to fetch user achievements' });
+  }
+});
+
+// Get current user's skills (me)
+router.get('/me/skills', authenticateToken, async (req: any, res) => {
+  try {
+    const userId = req.user.userId;
+
+    // Get skills from posts
+    const postSkills = await query(`
+      SELECT DISTINCT language 
+      FROM posts 
+      WHERE author_id = $1 AND language IS NOT NULL
+    `, [userId]);
+
+    // Get skills from submissions
+    const submissionSkills = await query(`
+      SELECT DISTINCT language 
+      FROM submissions 
+      WHERE user_id = $1 AND language IS NOT NULL
+    `, [userId]);
+
+    // Combine and deduplicate skills
+    const allSkills = new Set();
+    postSkills.rows.forEach(row => allSkills.add(row.language));
+    submissionSkills.rows.forEach(row => allSkills.add(row.language));
+
+    res.json(Array.from(allSkills));
+  } catch (error) {
+    logger.error('Error fetching current user skills:', error);
+    res.status(500).json({ error: 'Failed to fetch user skills' });
+  }
+});
+
+// Get current user's activity (me)
+router.get('/me/activity', authenticateToken, async (req: any, res) => {
+  try {
+    const userId = req.user.userId;
+    const { page = 1, limit = 10 } = req.query;
+    const offset = (Number(page) - 1) * Number(limit);
+
+    const activity = await query(`
+      SELECT 
+        'post' as type,
+        p.id,
+        p.title,
+        p.created_at,
+        NULL as problem_title,
+        NULL as submission_status
+       FROM posts p 
+       WHERE p.author_id = $1
+       UNION ALL
+       SELECT 
+        'submission' as type,
+        s.id,
+        NULL as title,
+        s.created_at,
+        'Problem Solved' as problem_title,
+        s.status as submission_status
+       FROM submissions s 
+       WHERE s.user_id = $1 AND s.status = 'accepted'
+       ORDER BY created_at DESC
+       LIMIT $2 OFFSET $3
+    `, [userId, limit, offset]);
+
+    res.json(activity.rows);
+  } catch (error) {
+    logger.error('Error fetching current user activity:', error);
+    res.status(500).json({ error: 'Failed to fetch user activity' });
+  }
+});
+
+// Get current user's follow status (me)
+router.get('/me/follow-status', authenticateToken, async (req: any, res) => {
+  try {
+    const userId = req.user.userId;
+    const { targetUserId } = req.query;
+
+    if (!targetUserId) {
+      return res.json({ isFollowing: false });
+    }
+
+    const followStatus = await query(
+      'SELECT id FROM follows WHERE follower_id = $1 AND following_id = $2',
+      [userId, targetUserId]
+    );
+
+    res.json({ isFollowing: followStatus.rows.length > 0 });
+  } catch (error) {
+    logger.error('Error checking follow status:', error);
+    res.status(500).json({ error: 'Failed to check follow status' });
   }
 });
 
@@ -461,6 +624,66 @@ router.get('/:userId/follow-status', authenticateToken, async (req: any, res) =>
   } catch (error) {
     logger.error('Error checking follow status:', error);
     res.status(500).json({ error: 'Failed to check follow status' });
+  }
+});
+
+// Get current user's posts (me)
+router.get('/me/posts', authenticateToken, async (req: any, res) => {
+  try {
+    const userId = req.user.userId;
+    const { page = 1, limit = 10 } = req.query;
+
+    const offset = (Number(page) - 1) * Number(limit);
+
+    const result = await query(
+      `SELECT 
+        p.id, p.title, p.content, p.code, p.language, p.tags, p.created_at, p.updated_at,
+        u.id as author_id, u.username as author_username, u.name as author_name, u.college_id as author_college_id,
+        (SELECT COUNT(*) FROM comments c WHERE c.post_id = p.id) as comment_count,
+        (SELECT COUNT(*) FROM likes l WHERE l.post_id = p.id) as like_count
+      FROM posts p
+      JOIN users u ON p.author_id = u.id
+      WHERE p.author_id = $1
+      ORDER BY p.created_at DESC
+      LIMIT $2 OFFSET $3`,
+      [userId, limit, offset]
+    );
+
+    const totalResult = await query(
+      'SELECT COUNT(*) as total FROM posts WHERE author_id = $1',
+      [userId]
+    );
+
+    const posts = result.rows.map(row => ({
+      id: row.id,
+      title: row.title,
+      content: row.content,
+      code: row.code,
+      language: row.language,
+      tags: row.tags,
+      createdAt: row.created_at,
+      updatedAt: row.updated_at,
+      author: {
+        id: row.author_id,
+        username: row.author_username,
+        name: row.author_name,
+        collegeId: row.author_college_id,
+      },
+      _count: {
+        comments: parseInt(row.comment_count),
+        likes: parseInt(row.like_count),
+      }
+    }));
+
+    res.json({
+      posts,
+      total: parseInt(totalResult.rows[0].total),
+      page: Number(page),
+      limit: Number(limit)
+    });
+  } catch (error) {
+    logger.error('Error fetching current user posts:', error);
+    res.status(500).json({ error: 'Failed to fetch user posts' });
   }
 });
 

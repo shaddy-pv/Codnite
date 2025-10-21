@@ -61,6 +61,60 @@ router.post('/avatar', authenticate, fileUploadService.getMulterConfig().single(
   }
 });
 
+// Upload cover photo
+router.post('/cover-photo', authenticate, fileUploadService.getMulterConfig().single('coverPhoto'), async (req: any, res) => {
+  try {
+    const userId = req.user.userId;
+    const file = req.file;
+
+    if (!file) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'No file provided' 
+      });
+    }
+
+    // Upload and process the image
+    const result = await fileUploadService.uploadAvatar(file, userId, {
+      width: 1200,
+      height: 300,
+      quality: 85,
+      format: 'webp',
+      fit: 'cover',
+      prefix: 'cover'
+    });
+
+    if (!result.success) {
+      return res.status(400).json({
+        success: false,
+        error: result.error
+      });
+    }
+
+    // Update user's cover photo URL in database
+    await query(
+      'UPDATE users SET cover_photo_url = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
+      [result.url, userId]
+    );
+
+    logger.info('User cover photo updated', { userId, coverPhotoUrl: result.url });
+
+    res.json({
+      success: true,
+      coverPhotoUrl: result.url,
+      filename: result.filename,
+      size: result.size
+    });
+
+  } catch (error) {
+    logger.error('Cover photo upload error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to upload cover photo'
+    });
+  }
+});
+
 // Upload general image (for posts, etc.)
 router.post('/image', authenticate, fileUploadService.getMulterConfig().single('file'), async (req: any, res) => {
   try {

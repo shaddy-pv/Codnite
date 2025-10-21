@@ -16,14 +16,14 @@ const Badge: React.FC<BadgeProps> = ({
   className = ''
 }) => {
   const colorClasses = {
-    blue: 'bg-primary-blue bg-opacity-20 text-primary-blue',
-    purple: 'bg-primary-purple bg-opacity-20 text-primary-purple',
-    cyan: 'bg-primary-cyan bg-opacity-20 text-primary-cyan',
+    blue: 'bg-neutral-600 bg-opacity-20 text-neutral-300',
+    purple: 'bg-neutral-600 bg-opacity-20 text-neutral-300',
+    cyan: 'bg-neutral-600 bg-opacity-20 text-neutral-300',
     gray: 'bg-dark-400 bg-opacity-20 text-dark-300'
   };
 
   const variantClasses = {
-    primary: 'bg-primary-blue text-white',
+    primary: 'bg-neutral-600 text-white',
     secondary: 'bg-neutral-200 text-neutral-800 dark:bg-neutral-700 dark:text-neutral-200',
     outline: 'border border-neutral-300 text-neutral-700 dark:border-neutral-600 dark:text-neutral-300',
     success: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',

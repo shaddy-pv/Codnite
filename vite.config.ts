@@ -98,6 +98,10 @@ export default defineConfig({
   server: {
     port: 5173,
     host: true,
+    hmr: {
+      overlay: false, // Disable error overlay to prevent full reloads
+      port: 24678, // Use different port for HMR
+    },
     proxy: {
       '/api': {
         target: 'http://localhost:5000',
@@ -115,7 +119,6 @@ export default defineConfig({
       'react',
       'react-dom',
       'react-router-dom',
-      'lucide-react',
       'axios',
       'fast-deep-equal',
       '@tiptap/suggestion',

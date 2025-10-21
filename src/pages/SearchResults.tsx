@@ -252,25 +252,25 @@ const SearchResults: React.FC = () => {
                   )}
                   
                   <div className="flex items-center space-x-4 text-sm text-neutral-500 dark:text-neutral-400">
-                    <span>{result.followers} followers</span>
-                    <span>{result.following} following</span>
-                    <span>Joined {formatDate(result.createdAt)}</span>
-                    {result.collegeId && (
-                      <span>{result.collegeId}</span>
+                    <span>{result.followers_count} followers</span>
+                    <span>{result.following_count} following</span>
+                    <span>Joined {formatDate(result.created_at)}</span>
+                    {result.college_name && (
+                      <span>{result.college_name}</span>
                     )}
                   </div>
                 </div>
                 
                 <div className="flex flex-col space-y-2">
                   <Button
-                    variant={result.isFollowing ? "outline" : "primary"}
+                    variant="primary"
                     size="sm"
                     onClick={(e) => {
                       e.stopPropagation();
                       // Handle follow/unfollow
                     }}
                   >
-                    {result.isFollowing ? 'Following' : 'Follow'}
+                    Follow
                   </Button>
                 </div>
               </div>

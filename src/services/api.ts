@@ -1,6 +1,8 @@
 import axios from 'axios';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+// Access Vite env defensively to satisfy TS in all setups
+const VITE_ENV: any = (import.meta as any)?.env || {};
+const API_BASE_URL = VITE_ENV.VITE_API_URL || (VITE_ENV.PROD ? 'https://your-domain.com/api' : '/api');
 
 // Create axios instance
 const apiClient = axios.create({
@@ -23,21 +25,35 @@ apiClient.interceptors.request.use((config) => {
 apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
-      window.location.href = '/';
+    // Do NOT globally clear auth or redirect on 401.
+    // Some endpoints (e.g., optional widgets) may return 401 during app boot.
+    // Let callers decide how to handle 401s to avoid auth loops.
+
+    const status = error.response?.status;
+    const urlPath = (error.config?.url || '').toString();
+
+    // Suppress noisy logs for optional/benign endpoints
+    const suppressLog = (
+      (status === 401 && (
+        urlPath.startsWith('/level/user') ||
+        urlPath.startsWith('/notifications') ||
+        urlPath.startsWith('/chat')
+      )) ||
+      (status === 404 && (
+        urlPath.startsWith('/posts/bookmarks')
+      ))
+    );
+
+    if (!suppressLog) {
+      console.error('API Error:', {
+        status: error.response?.status,
+        data: error.response?.data,
+        message: error.message,
+        url: error.config?.url,
+        method: error.config?.method
+      });
     }
-    
-    // Enhanced error logging
-    console.error('API Error:', {
-      status: error.response?.status,
-      data: error.response?.data,
-      message: error.message,
-      url: error.config?.url,
-      method: error.config?.method
-    });
-    
+
     return Promise.reject(error);
   }
 );
@@ -65,9 +81,23 @@ export const authAPI = {
 
   login: async (credentials: { email: string; password: string }) => {
     try {
+      console.log('authAPI.login called with:', { email: credentials.email, password: '***' });
+      console.log('API_BASE_URL:', API_BASE_URL);
+      
       const response = await apiClient.post('/auth/login', credentials);
+      console.log('Login API response:', response.data);
       return response.data;
     } catch (error: any) {
+      console.error('Login API error:', {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status,
+        config: {
+          url: error.config?.url,
+          method: error.config?.method,
+          baseURL: error.config?.baseURL
+        }
+      });
       const enhancedError = new Error(error.response?.data?.error || error.message || 'Login failed');
       (enhancedError as any).response = error.response;
       (enhancedError as any).status = error.response?.status;
@@ -133,6 +163,7 @@ export interface User {
   name: string;
   bio?: string;
   avatarUrl?: string;
+  coverPhotoUrl?: string;
   githubUsername?: string;
   linkedinUrl?: string;
   collegeId?: string;
@@ -277,8 +308,17 @@ export const authApi = {
 
 // Posts API
 export const postsApi = {
-  getPosts: async (page: number = 1, limit: number = 10) => {
-    const response = await apiClient.get(`/posts?page=${page}&limit=${limit}`);
+  getPosts: async (page: number = 1, limit: number = 10, sort?: string) => {
+    const params = new URLSearchParams({
+      page: page.toString(),
+      limit: limit.toString(),
+    });
+    
+    if (sort) {
+      params.append('sort', sort);
+    }
+    
+    const response = await apiClient.get(`/posts?${params.toString()}`);
     return response.data;
   },
 
@@ -295,6 +335,7 @@ export const postsApi = {
     tags?: string[];
     category?: string;
     isPublic?: boolean;
+    collegeId?: string;
   }) => {
     const response = await apiClient.post('/posts', data);
     return response.data;
@@ -424,36 +465,42 @@ export const problemsApi = {
 // Users API
 export const usersApi = {
   getUser: async (userId: string) => {
-    const response = await apiClient.get(`/user/${userId}`);
+    const endpoint = userId === 'me' ? '/user/me' : `/user/${userId}`;
+    const response = await apiClient.get(endpoint);
     return response.data;
   },
 
   getUserPosts: async (userId: string): Promise<Post[]> => {
-    const response = await apiClient.get(`/user/${userId}/posts`);
+    const endpoint = userId === 'me' ? '/user/me/posts' : `/user/${userId}/posts`;
+    const response = await apiClient.get(endpoint);
     return response.data.posts;
   },
 
   // Get user statistics
   getUserStats: async (userId: string) => {
-    const response = await apiClient.get(`/user/${userId}/stats`);
+    const endpoint = userId === 'me' ? '/user/me/stats' : `/user/${userId}/stats`;
+    const response = await apiClient.get(endpoint);
     return response.data;
   },
 
   // Get user badges
   getUserBadges: async (userId: string) => {
-    const response = await apiClient.get(`/user/${userId}/badges`);
+    const endpoint = userId === 'me' ? '/user/me/badges' : `/user/${userId}/badges`;
+    const response = await apiClient.get(endpoint);
     return response.data;
   },
 
   // Get user achievements
   getUserAchievements: async (userId: string) => {
-    const response = await apiClient.get(`/user/${userId}/achievements`);
+    const endpoint = userId === 'me' ? '/user/me/achievements' : `/user/${userId}/achievements`;
+    const response = await apiClient.get(endpoint);
     return response.data;
   },
 
   // Get user activity feed
   getUserActivity: async (userId: string, page = 1, limit = 10) => {
-    const response = await apiClient.get(`/user/${userId}/activity`, {
+    const endpoint = userId === 'me' ? '/user/me/activity' : `/user/${userId}/activity`;
+    const response = await apiClient.get(endpoint, {
       params: { page, limit }
     });
     return response.data;
@@ -461,7 +508,8 @@ export const usersApi = {
 
   // Get user skills
   getUserSkills: async (userId: string) => {
-    const response = await apiClient.get(`/user/${userId}/skills`);
+    const endpoint = userId === 'me' ? '/user/me/skills' : `/user/${userId}/skills`;
+    const response = await apiClient.get(endpoint);
     return response.data;
   },
 
@@ -637,13 +685,22 @@ export const api = {
     return response.data;
   },
 
+  uploadCoverPhoto: async (formData: FormData) => {
+    const response = await apiClient.post('/upload/cover-photo', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  },
+
   // Code Execution
   executeCode: async (data: {
     code: string;
     language: string;
     testCases?: any[];
   }) => {
-    const response = await apiClient.post('/code/execute', data);
+    const response = await apiClient.post('/execution/test', data);
     return response.data;
   },
 
@@ -783,6 +840,32 @@ export const chatApi = {
     apiClient.post(`/chat/rooms/${roomId}/messages`, data),
   getMembers: (roomId: string) =>
     apiClient.get(`/chat/rooms/${roomId}/members`),
+  
+  // Direct messaging functions
+  getDirectChats: async () => {
+    const response = await apiClient.get('/chat');
+    return response.data;
+  },
+
+  getDirectMessages: async (userId: string, page: number = 1, limit: number = 50) => {
+    const response = await apiClient.get(`/chat/messages/${userId}?page=${page}&limit=${limit}`);
+    return response.data;
+  },
+
+  sendDirectMessage: async (receiverId: string, content: string) => {
+    const response = await apiClient.post('/chat/messages', { receiverId, content });
+    return response.data;
+  },
+
+  createDirectChat: async (userId: string) => {
+    // For direct messages, we don't need to create a chat - just send a message
+    return { chatId: `chat_${userId}` };
+  },
+
+  markDirectChatAsRead: async (userId: string) => {
+    // This is handled automatically when fetching messages
+    return { success: true };
+  },
 };
 
 // Recommendations API
@@ -946,11 +1029,14 @@ export const searchApi = {
     limit?: number;
   }) => {
     const response = await apiClient.get('/search', { 
+      // prevent cached responses between rapid queries
+      headers: { 'Cache-Control': 'no-cache' },
       params: {
         q: params.query,  // Backend expects 'q' parameter
         type: params.type,
         limit: params.limit,
-        offset: params.page ? (params.page - 1) * (params.limit || 20) : 0
+        offset: params.page ? (params.page - 1) * (params.limit || 20) : 0,
+        _t: Date.now() // cache buster
       }
     });
     return response.data;
@@ -964,7 +1050,61 @@ export const searchApi = {
       limit: limit
     });
     return {
-      results: response.results?.filter((result: any) => result.result_type === 'user') || [],
+      users: response.results || [],
+      pagination: {
+        total: response.total || 0,
+        pages: Math.ceil(response.total / limit) || 1,
+        currentPage: page,
+        limit: limit
+      }
+    };
+  },
+
+  searchPosts: async (query: string, page: number = 1, limit: number = 10) => {
+    const response = await searchApi.search({
+      query: query,
+      type: 'posts',
+      page: page,
+      limit: limit
+    });
+    return {
+      posts: response.results || [],
+      pagination: {
+        total: response.total || 0,
+        pages: Math.ceil(response.total / limit) || 1,
+        currentPage: page,
+        limit: limit
+      }
+    };
+  },
+
+  searchChallenges: async (query: string, page: number = 1, limit: number = 10) => {
+    const response = await searchApi.search({
+      query: query,
+      type: 'challenges',
+      page: page,
+      limit: limit
+    });
+    return {
+      challenges: response.results || [],
+      pagination: {
+        total: response.total || 0,
+        pages: Math.ceil(response.total / limit) || 1,
+        currentPage: page,
+        limit: limit
+      }
+    };
+  },
+
+  searchProblems: async (query: string, page: number = 1, limit: number = 10) => {
+    const response = await searchApi.search({
+      query: query,
+      type: 'problems',
+      page: page,
+      limit: limit
+    });
+    return {
+      problems: response.results || [],
       pagination: {
         total: response.total || 0,
         pages: Math.ceil(response.total / limit) || 1,
@@ -988,6 +1128,59 @@ export const bookmarkApi = {
   },
 };
 
+// Admin API functions
+export const adminApi = {
+  getStats: async () => {
+    const response = await apiClient.get('/admin/stats');
+    return response.data;
+  },
+
+  getRecentActivity: async () => {
+    const response = await apiClient.get('/admin/activity');
+    return response.data;
+  },
+
+  getUsers: async (page: number = 1, limit: number = 20) => {
+    const response = await apiClient.get(`/admin/users?page=${page}&limit=${limit}`);
+    return response.data;
+  },
+
+  getUser: async (userId: string) => {
+    const response = await apiClient.get(`/admin/users/${userId}`);
+    return response.data;
+  },
+
+  updateUser: async (userId: string, data: any) => {
+    const response = await apiClient.put(`/admin/users/${userId}`, data);
+    return response.data;
+  },
+
+  deleteUser: async (userId: string) => {
+    const response = await apiClient.delete(`/admin/users/${userId}`);
+    return response.data;
+  },
+
+  getPosts: async (page: number = 1, limit: number = 20) => {
+    const response = await apiClient.get(`/admin/posts?page=${page}&limit=${limit}`);
+    return response.data;
+  },
+
+  deletePost: async (postId: string) => {
+    const response = await apiClient.delete(`/admin/posts/${postId}`);
+    return response.data;
+  },
+
+  getSystemSettings: async () => {
+    const response = await apiClient.get('/admin/settings');
+    return response.data;
+  },
+
+  updateSystemSettings: async (settings: any) => {
+    const response = await apiClient.put('/admin/settings', settings);
+    return response.data;
+  },
+};
+
 // Challenge API
 export const challengeApi = {
   submitChallenge: async (challengeId: string, code: string, language: string) => {
@@ -995,6 +1188,59 @@ export const challengeApi = {
       code,
       language
     });
+    return response.data;
+  },
+};
+
+// Level and Progress API
+export const levelApi = {
+  getUserLevel: async (): Promise<{
+    level: number;
+    points: number;
+    currentLevelPoints: number;
+    nextLevelPoints: number;
+    progress: number;
+    stats: {
+      challengesCompleted: number;
+      problemsSolved: number;
+      postsCreated: number;
+      commentsMade: number;
+    };
+    badges: {
+      trophy: string;
+      code: string;
+      check: string;
+      star: string;
+    };
+  }> => {
+    const response = await apiClient.get('/level/user');
+    return response.data;
+  },
+
+  getLevelLeaderboard: async (limit = 10, offset = 0): Promise<Array<{
+    rank: number;
+    id: string;
+    username: string;
+    name: string;
+    avatar_url: string;
+    points: number;
+    level: number;
+    challengesCompleted: number;
+    problemsSolved: number;
+    postsCreated: number;
+  }>> => {
+    const response = await apiClient.get(`/level/leaderboard?limit=${limit}&offset=${offset}`);
+    return response.data;
+  },
+
+  updateUserPoints: async (points: number, reason: string): Promise<{
+    success: boolean;
+    newPoints: number;
+    level: number;
+    progress: number;
+    reason: string;
+  }> => {
+    const response = await apiClient.post('/level/points', { points, reason });
     return response.data;
   },
 };

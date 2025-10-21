@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Send, Loader2, Circle } from 'lucide-react';
+import { X, Send, Loader2, Circle, MessageSquare } from 'lucide-react';
 import { Button } from './ui/Button';
 import { Input } from './ui/Input';
 import Avatar from './ui/Avatar';
-import { Modal } from './ui/Modal';
+import { PortalModal } from './ui/PortalModal';
 import { api } from '../services/api';
 import { useToast } from './ui/Toast';
 import socketService from '../services/socket';
@@ -38,12 +38,15 @@ const ChatModal: React.FC<ChatModalProps> = ({
   const [sending, setSending] = useState(false);
   const [isOnline, setIsOnline] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
   const { error: showError } = useToast();
 
-  // Scroll to bottom when messages change
+  // Scroll the messages container to bottom (avoid scrolling modal backdrop)
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    const el = messagesContainerRef.current;
+    if (el) {
+      el.scrollTop = el.scrollHeight;
+    }
   };
 
   useEffect(() => {
@@ -52,12 +55,21 @@ const ChatModal: React.FC<ChatModalProps> = ({
 
   // Load messages when modal opens
   useEffect(() => {
+    let mounted = true;
     if (isOpen) {
+      // Reset scroll position every time it opens to avoid stuck offset
+      requestAnimationFrame(() => {
+        const el = messagesContainerRef.current;
+        if (el) el.scrollTop = el.scrollHeight;
+      });
       loadMessages();
       joinChatRoom();
     } else {
       leaveChatRoom();
+      const el = messagesContainerRef.current;
+      if (el) el.scrollTop = 0;
     }
+    return () => { mounted = false; };
   }, [isOpen, userId]);
 
   // Socket.IO event listeners
@@ -208,10 +220,10 @@ const ChatModal: React.FC<ChatModalProps> = ({
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} size="lg">
-      <div className="flex flex-col h-[600px]">
+    <PortalModal isOpen={isOpen} onClose={onClose} size="lg" showCloseButton={false}>
+      <div className="flex flex-col h-[80vh] md:h-[600px] bg-slate-800/50 backdrop-blur-sm rounded-2xl border border-slate-700/50 overflow-hidden">
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-neutral-200 dark:border-neutral-700">
+        <div className="flex items-center justify-between p-6 border-b border-slate-700/50 bg-slate-700/30">
           <div className="flex items-center space-x-3">
             <div className="relative">
               <Avatar
@@ -220,14 +232,14 @@ const ChatModal: React.FC<ChatModalProps> = ({
                 size="md"
               />
               {isOnline && (
-                <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-green-500 border-2 border-white dark:border-neutral-900 rounded-full"></div>
+                <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-green-500 border-2 border-slate-800 rounded-full"></div>
               )}
             </div>
             <div>
-              <h3 className="font-semibold text-neutral-900 dark:text-neutral-100">
+              <h3 className="font-semibold text-white">
                 {userName}
               </h3>
-              <p className="text-sm text-neutral-500 dark:text-neutral-400">
+              <p className="text-sm text-slate-400">
                 {isOnline ? 'Online' : 'Offline'}
                 {isTyping && ' • Typing...'}
               </p>
@@ -237,43 +249,50 @@ const ChatModal: React.FC<ChatModalProps> = ({
             variant="ghost"
             size="sm"
             onClick={onClose}
-            leftIcon={<X className="w-4 h-4" />}
+            className="text-slate-400 hover:text-white hover:bg-slate-700/50"
           >
-            Close
+            <X className="w-4 h-4" />
           </Button>
         </div>
 
         {/* Messages */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-4">
+        <div ref={messagesContainerRef} className="flex-1 overflow-y-auto p-6 space-y-4 bg-slate-900/20">
           {loading ? (
             <div className="flex justify-center items-center h-full">
-              <Loader2 className="w-6 h-6 animate-spin text-neutral-400" />
+              <div className="flex flex-col items-center space-y-4">
+                <div className="w-8 h-8 border-2 border-primary-500 border-t-transparent rounded-full animate-spin"></div>
+                <p className="text-slate-400">Loading messages...</p>
+              </div>
             </div>
           ) : messages.length === 0 ? (
-            <div className="flex justify-center items-center h-full text-neutral-500 dark:text-neutral-400">
-              No messages yet. Start a conversation!
+            <div className="flex flex-col items-center justify-center h-full text-slate-400">
+              <div className="w-16 h-16 bg-slate-700/50 rounded-full flex items-center justify-center mb-4">
+                <MessageSquare className="w-8 h-8 text-slate-500" />
+              </div>
+              <h3 className="text-lg font-semibold text-white mb-2">No messages yet</h3>
+              <p className="text-slate-400 text-center max-w-sm">
+                Start a conversation with {userName}!
+              </p>
             </div>
           ) : (
-            messages.map((message) => {
-              console.log('Rendering message:', message);
-              return (
+            messages.map((message) => (
               <div
                 key={message.id}
                 className={`flex ${message.senderId === userId ? 'justify-start' : 'justify-end'}`}
               >
                 <div
-                  className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
+                  className={`max-w-xs lg:max-w-md px-4 py-3 rounded-2xl ${
                     message.senderId === userId
-                      ? 'bg-neutral-100 dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100'
-                      : 'bg-primary-600 text-white'
+                      ? 'bg-slate-700/50 text-white border border-slate-600/50'
+                      : 'bg-gradient-to-r from-primary-600 to-secondary-600 text-white shadow-lg'
                   }`}
                 >
-                  <p className="text-sm">{message.content}</p>
+                  <p className="text-sm leading-relaxed">{message.content}</p>
                   <p
-                    className={`text-xs mt-1 ${
+                    className={`text-xs mt-2 ${
                       message.senderId === userId
-                        ? 'text-neutral-500 dark:text-neutral-400'
-                        : 'text-primary-100'
+                        ? 'text-slate-400'
+                        : 'text-primary-200'
                     }`}
                   >
                     {formatTime(message.createdAt)}
@@ -285,26 +304,27 @@ const ChatModal: React.FC<ChatModalProps> = ({
                   </p>
                 </div>
               </div>
-              );
-            })
+            ))
           )}
-          <div ref={messagesEndRef} />
+          {/* sentinel no-op; we manually control scrollTop */}
+          <div />
         </div>
 
         {/* Input */}
-        <div className="p-4 border-t border-neutral-200 dark:border-neutral-700">
-          <div className="flex space-x-2">
+        <div className="p-6 border-t border-slate-700/50 bg-slate-700/30">
+          <div className="flex space-x-3">
             <Input
               value={newMessage}
               onChange={handleInputChange}
               onKeyPress={handleKeyPress}
               placeholder="Type a message..."
               disabled={sending}
-              className="flex-1"
+              className="flex-1 bg-slate-800/50 border-slate-600/50 text-white placeholder-slate-400 focus:border-primary-500 focus:ring-primary-500/20"
             />
             <Button
               onClick={sendMessage}
               disabled={!newMessage.trim() || sending}
+              className="bg-gradient-to-r from-primary-600 to-secondary-600 hover:from-primary-700 hover:to-secondary-700 text-white shadow-lg shadow-primary-500/25 border-0"
               leftIcon={sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
             >
               Send
@@ -312,7 +332,7 @@ const ChatModal: React.FC<ChatModalProps> = ({
           </div>
         </div>
       </div>
-    </Modal>
+    </PortalModal>
   );
 };
 

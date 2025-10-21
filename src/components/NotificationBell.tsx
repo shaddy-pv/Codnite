@@ -213,7 +213,7 @@ const NotificationDropdown: React.FC<NotificationDropdownProps> = ({ isOpen, onC
   if (!isOpen) return null;
 
   return (
-    <div className="absolute right-0 top-full mt-2 w-96 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-lg z-50">
+    <div className="absolute right-0 top-full mt-2 w-96 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-lg z-30">
       <div className="p-4 border-b border-gray-200 dark:border-gray-700">
         <div className="flex items-center justify-between">
           <h3 className="font-semibold text-gray-900 dark:text-white">
@@ -251,7 +251,7 @@ const NotificationDropdown: React.FC<NotificationDropdownProps> = ({ isOpen, onC
               <span className="text-sm text-gray-600 dark:text-gray-400">In-app notifications</span>
               <button
                 onClick={() => updatePreferences({ ...preferences, inApp: !preferences.inApp })}
-                className={`p-1 rounded ${preferences.inApp ? 'bg-blue-500' : 'bg-gray-300'}`}
+                className={`p-1 rounded ${preferences.inApp ? 'bg-primary-500' : 'bg-gray-300'}`}
               >
                 {preferences.inApp ? <Eye className="w-3 h-3 text-white" /> : <EyeOff className="w-3 h-3 text-gray-600" />}
               </button>
@@ -265,7 +265,7 @@ const NotificationDropdown: React.FC<NotificationDropdownProps> = ({ isOpen, onC
                     types: { ...preferences.types, [type]: !enabled }
                   })}
                   className={`p-2 rounded text-left ${
-                    enabled ? 'bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200' : 'bg-gray-100 dark:bg-gray-600 text-gray-600 dark:text-gray-400'
+                    enabled ? 'bg-primary-100 dark:bg-primary-900 text-primary-800 dark:text-primary-200' : 'bg-gray-100 dark:bg-gray-600 text-gray-600 dark:text-gray-400'
                   }`}
                 >
                   {type.charAt(0).toUpperCase() + type.slice(1)}
@@ -294,7 +294,7 @@ const NotificationDropdown: React.FC<NotificationDropdownProps> = ({ isOpen, onC
               <div
                 key={notification.id}
                 className={`p-4 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors border-l-4 ${
-                  !notification.isRead ? 'bg-blue-50 dark:bg-blue-900/20' : ''
+                  !notification.isRead ? 'bg-primary-50 dark:bg-primary-900/20' : ''
                 } ${getPriorityColor(notification.priority)}`}
               >
                 <div className="flex items-start space-x-3">
@@ -422,7 +422,7 @@ const NotificationBell: React.FC<NotificationBellProps> = ({ className = '' }) =
       {/* Overlay to close dropdown when clicking outside */}
       {isOpen && (
         <div
-          className="fixed inset-0 z-40"
+          className="fixed inset-0 z-30"
           onClick={() => setIsOpen(false)}
         />
       )}

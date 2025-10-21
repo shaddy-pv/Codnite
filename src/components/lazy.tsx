@@ -15,6 +15,7 @@ export const SearchResults = lazy(() => import('../pages/SearchResults'));
 export const CodeExecutionTest = lazy(() => import('../pages/CodeExecutionTest'));
 
 // Lazy load heavy components that are not statically imported elsewhere
+export const Messages = lazy(() => import('../pages/Messages'));
 export const Settings = lazy(() => import('../pages/Settings'));
 
 // Note: Components that are both statically and dynamically imported 

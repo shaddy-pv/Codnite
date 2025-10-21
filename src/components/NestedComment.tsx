@@ -205,7 +205,7 @@ const NestedComment: React.FC<NestedCommentProps> = ({
             </button>
             
             {showActions && (
-              <div className="absolute right-0 top-8 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-10 min-w-[120px]">
+              <div className="absolute right-0 top-8 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-30 min-w-[120px]">
                 {canEdit && (
                   <button
                     onClick={() => {
@@ -294,7 +294,7 @@ const NestedComment: React.FC<NestedCommentProps> = ({
           {canReply && (
             <button
               onClick={() => setIsReplying(!isReplying)}
-              className="flex items-center gap-1 text-gray-500 hover:text-blue-500 transition-colors"
+              className="flex items-center gap-1 text-gray-500 hover:text-primary-500 transition-colors"
             >
               <Reply className="w-4 h-4" />
               Reply
@@ -304,7 +304,7 @@ const NestedComment: React.FC<NestedCommentProps> = ({
           {comment.replyCount > 0 && (
             <button
               onClick={() => setShowReplies(!showReplies)}
-              className="flex items-center gap-1 text-gray-500 hover:text-blue-500 transition-colors"
+              className="flex items-center gap-1 text-gray-500 hover:text-primary-500 transition-colors"
             >
               {showReplies ? (
                 <ChevronDown className="w-4 h-4" />

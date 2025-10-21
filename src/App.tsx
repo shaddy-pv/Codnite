@@ -1,4 +1,4 @@
-import React, { useEffect, useState, Suspense } from 'react';
+import { useEffect, useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import Navbar from './components/layout/Navbar';
 import Sidebar from './components/layout/Sidebar';
@@ -10,6 +10,10 @@ import { ThemeProvider } from './context/ThemeContext';
 import { NetworkStatus } from './components/ui/NetworkStatus';
 import { RouteLazyWrapper } from './components/ui/LazyWrapper';
 import PerformanceMonitor from './components/PerformanceMonitor';
+import SearchModal from './components/SearchModal';
+import ChatSystem from './components/ChatSystem';
+import AdminDashboard from './components/AdminDashboard';
+import { useAuthState } from './hooks/useAuthState';
 
 // Lazy load pages
 import {
@@ -25,15 +29,18 @@ import {
   Profile,
   SearchResults,
   CodeExecutionTest,
+  Messages,
   Settings,
 } from './components/lazy';
 
 export function App() {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
+  // Use HMR-resistant authentication hook
+  const { user, isAuthenticated, isLoading, login, logout } = useAuthState();
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
-  const [user, setUser] = useState(null);
-  const [showLogin, setShowLogin] = useState(false);
+  const [showLogin, setShowLogin] = useState(true); // Changed to true to show login by default
+  const [showSearchModal, setShowSearchModal] = useState(false);
+  const [showChatSystem, setShowChatSystem] = useState(false);
+  const [showAdminDashboard, setShowAdminDashboard] = useState(false);
   const { toasts, removeToast } = useToast();
 
   useEffect(() => {
@@ -44,65 +51,44 @@ export function App() {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // Check authentication on app load
-  useEffect(() => {
-    const checkAuth = async () => {
-      const token = localStorage.getItem('token');
-      if (token) {
-        try {
-          const response = await fetch('http://localhost:5000/api/auth/me', {
-            headers: {
-              'Authorization': `Bearer ${token}`,
-            },
-          });
-          
-          if (response.ok) {
-            const userData = await response.json();
-            setUser(userData);
-            setIsAuthenticated(true);
-            // Store user data in localStorage for consistency
-            localStorage.setItem('user', JSON.stringify(userData));
-          } else {
-            localStorage.removeItem('token');
-            localStorage.removeItem('user');
-          }
-        } catch (error) {
-          console.error('Auth check failed:', error);
-          localStorage.removeItem('token');
-          localStorage.removeItem('user');
-        }
-      }
-      setIsLoading(false);
-    };
-
-    checkAuth();
-  }, []);
+  // Authentication is now handled by useAuthState hook
+  // This hook persists state across HMR reloads
 
   const handleLogin = (userData: any, token: string) => {
-    setUser(userData);
-    setIsAuthenticated(true);
+    console.log('🚀 handleLogin called with:', { 
+      userData: userData ? `${userData.name} (${userData.email})` : 'none', 
+      token: token ? 'exists' : 'none' 
+    });
+    
+    // Use the HMR-resistant login function
+    login(userData, token);
+    
+    // Also update local state for immediate UI response
     setShowLogin(false);
-    // Store user data in localStorage for consistency
-    localStorage.setItem('user', JSON.stringify(userData));
+    
+    console.log('✅ Login completed - state persisted across HMR');
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    setUser(null);
-    setIsAuthenticated(false);
-    setShowLogin(false);
-  };
-
-  const handleSwitchToLogin = () => {
+    console.log('🚪 Logout called');
+    logout(); // Use the HMR-resistant logout function
     setShowLogin(true);
   };
 
+  const handleSwitchToLogin = () => {
+    console.log('Switching to login, showLogin was:', showLogin);
+    setShowLogin(true);
+    console.log('Switched to login, showLogin is now:', true);
+  };
+
   const handleSwitchToRegister = () => {
+    console.log('Switching to register, showLogin was:', showLogin);
     setShowLogin(false);
+    console.log('Switched to register, showLogin is now:', false);
   };
 
   if (isLoading) {
+    console.log('⏳ App is loading...');
     return (
       <ThemeProvider>
         <div className="min-h-screen flex items-center justify-center bg-neutral-50 dark:bg-neutral-900">
@@ -117,6 +103,14 @@ export function App() {
     );
   }
 
+  console.log('🏠 App render decision:', {
+    isAuthenticated,
+    isLoading,
+    user: user ? `${user.name} (${user.email})` : 'none',
+    showLogin,
+    hasToken: localStorage.getItem('token') ? 'yes' : 'no'
+  });
+
   return (
     <ThemeProvider>
       <ErrorBoundary>
@@ -124,30 +118,32 @@ export function App() {
           <div className="min-h-screen bg-neutral-50 dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100">
             {isAuthenticated ? (
               <>
+                {console.log('🎯 Rendering MAIN APP - user is authenticated')}
                 <div className="flex h-screen">
                   {!isMobile && <Sidebar />}
-                  <div className="flex flex-col flex-1 h-screen overflow-hidden">
+                  <div className="flex flex-col flex-1">
                     <Navbar user={user} onLogout={handleLogout} />
-                     <main className="flex-1 overflow-auto bg-neutral-50 dark:bg-neutral-900">
-                       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-                         <RouteLazyWrapper routeName="main content">
-                           <Routes>
-                             <Route path="/" element={<Home />} />
-                             <Route path="/community/:collegeId" element={<CollegeCommunity />} />
-                             <Route path="/problem/:problemId" element={<ProblemSolving />} />
-                             <Route path="/challenges" element={<Challenges />} />
-                             <Route path="/challenge/:challengeId" element={<ChallengeDetails />} />
-                              <Route path="/problems" element={<Problems />} />
-                              <Route path="/leaderboard" element={<Leaderboard />} />
-                              <Route path="/profile/:userId" element={<Profile />} />
-                              <Route path="/search" element={<SearchResults />} />
-                              <Route path="/code-execution" element={<CodeExecutionTest />} />
-                              <Route path="/settings" element={<Settings />} />
-                              <Route path="*" element={<Navigate to="/" />} />
-                           </Routes>
-                         </RouteLazyWrapper>
-                       </div>
-                     </main>
+                    <main className="flex-1 bg-neutral-50 dark:bg-neutral-900">
+                      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                        <RouteLazyWrapper routeName="main content">
+                          <Routes>
+                            <Route path="/" element={<Home />} />
+                            <Route path="/community/:collegeId" element={<CollegeCommunity />} />
+                            <Route path="/problem/:problemId" element={<ProblemSolving />} />
+                            <Route path="/challenges" element={<Challenges />} />
+                            <Route path="/challenge/:challengeId" element={<ChallengeDetails />} />
+                             <Route path="/problems" element={<Problems />} />
+                             <Route path="/leaderboard" element={<Leaderboard />} />
+                             <Route path="/profile/:userId" element={<Profile />} />
+                             <Route path="/messages" element={<Messages />} />
+                             <Route path="/search" element={<SearchResults />} />
+                             <Route path="/code-execution" element={<CodeExecutionTest />} />
+                             <Route path="/settings" element={<Settings />} />
+                             <Route path="*" element={<Navigate to="/" />} />
+                          </Routes>
+                        </RouteLazyWrapper>
+                      </div>
+                    </main>
                     {isMobile && <MobileNav />}
                   </div>
                 </div>
@@ -158,17 +154,33 @@ export function App() {
                   <Route 
                     path="/*" 
                     element={
-                      showLogin ? (
-                        <Login 
-                          onLogin={handleLogin} 
-                          onSwitchToRegister={handleSwitchToRegister} 
-                        />
-                      ) : (
-                        <Onboarding 
-                          onAuthenticate={handleLogin}
-                          onSwitchToLogin={handleSwitchToLogin}
-                        />
-                      )
+                      (() => {
+                        console.log('🎭 Rendering auth component:', { 
+                          showLogin, 
+                          isAuthenticated, 
+                          isLoading,
+                          hasToken: localStorage.getItem('token') ? 'yes' : 'no',
+                          hasUser: localStorage.getItem('user') ? 'yes' : 'no'
+                        });
+                        
+                        if (showLogin) {
+                          console.log('📝 Rendering LOGIN component');
+                          return (
+                            <Login 
+                              onLogin={handleLogin} 
+                              onSwitchToRegister={handleSwitchToRegister} 
+                            />
+                          );
+                        } else {
+                          console.log('📋 Rendering REGISTRATION component');
+                          return (
+                            <Onboarding 
+                              onAuthenticate={handleLogin}
+                              onSwitchToLogin={handleSwitchToLogin}
+                            />
+                          );
+                        }
+                      })()
                     } 
                   />
                 </Routes>
@@ -178,6 +190,20 @@ export function App() {
           <ToastContainer toasts={toasts} onClose={removeToast} />
           <NetworkStatus />
           <PerformanceMonitor />
+          
+          {/* Global Modals */}
+          <SearchModal 
+            isOpen={showSearchModal} 
+            onClose={() => setShowSearchModal(false)} 
+          />
+          <ChatSystem 
+            isOpen={showChatSystem} 
+            onClose={() => setShowChatSystem(false)} 
+          />
+          <AdminDashboard 
+            isOpen={showAdminDashboard} 
+            onClose={() => setShowAdminDashboard(false)} 
+          />
         </Router>
       </ErrorBoundary>
     </ThemeProvider>

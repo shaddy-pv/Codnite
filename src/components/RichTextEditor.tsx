@@ -52,6 +52,8 @@ interface RichTextEditorProps {
   placeholder?: string;
   className?: string;
   editable?: boolean;
+  onImageUpload?: (file: File) => Promise<void>;
+  onMentionSearch?: (query: string) => Promise<any[]>;
   showToolbar?: boolean;
   maxLength?: number;
 }
@@ -62,6 +64,8 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
   placeholder = 'Start writing...',
   className = '',
   editable = true,
+  onImageUpload,
+  onMentionSearch,
   showToolbar = true,
   maxLength = 10000
 }) => {

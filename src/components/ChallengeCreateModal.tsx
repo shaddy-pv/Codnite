@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Modal } from './ui/Modal';
+import { PortalModal } from './ui/PortalModal';
 import { Button } from './ui/Button';
 import { Input, Textarea } from './ui/Input';
 import Loading from './ui/Loading';
@@ -86,7 +86,7 @@ const ChallengeCreateModal: React.FC<ChallengeCreateModalProps> = ({
   };
 
   return (
-    <Modal
+    <PortalModal
       isOpen={isOpen}
       onClose={onClose}
       title="Create New Challenge"
@@ -124,7 +124,7 @@ const ChallengeCreateModal: React.FC<ChallengeCreateModalProps> = ({
             <select
               value={formData.difficulty}
               onChange={(e) => handleChange('difficulty', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
             >
               <option value="Easy">Easy</option>
               <option value="Medium">Medium</option>
@@ -179,7 +179,7 @@ const ChallengeCreateModal: React.FC<ChallengeCreateModalProps> = ({
           </Button>
         </div>
       </form>
-    </Modal>
+    </PortalModal>
   );
 };
 

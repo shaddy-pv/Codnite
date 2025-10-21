@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, memo } from 'react';
 import { Camera, User } from 'lucide-react';
 import AvatarUploadModal from '../AvatarUploadModal';
 
@@ -12,7 +12,7 @@ interface AvatarProps {
   className?: string;
 }
 
-const Avatar: React.FC<AvatarProps> = ({
+const AvatarComponent: React.FC<AvatarProps> = ({
   src,
   alt = 'Avatar',
   size = 'md',
@@ -59,6 +59,7 @@ const Avatar: React.FC<AvatarProps> = ({
               src={currentAvatarUrl}
               alt={alt}
               className="w-full h-full object-cover"
+              loading="lazy"
               onError={(e) => {
                 // Fallback to default avatar if image fails to load
                 const target = e.target as HTMLImageElement;
@@ -99,5 +100,16 @@ const Avatar: React.FC<AvatarProps> = ({
     </>
   );
 };
+
+const areEqual = (prev: AvatarProps, next: AvatarProps) => (
+  prev.src === next.src &&
+  prev.alt === next.alt &&
+  prev.size === next.size &&
+  prev.status === next.status &&
+  prev.editable === next.editable &&
+  prev.className === next.className
+);
+
+const Avatar = memo(AvatarComponent, areEqual);
 
 export default Avatar;

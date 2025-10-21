@@ -381,4 +381,96 @@ router.get('/conversations', authenticateToken, async (req, res) => {
   }
 });
 
+// Get all direct chats (for Messages page)
+router.get('/', authenticateToken, async (req, res) => {
+  try {
+    const currentUserId = req.user?.userId;
+
+    // Get all conversations with unread counts
+    const conversations = await query(`
+      SELECT DISTINCT
+        CASE 
+          WHEN dm.sender_id = $1 THEN dm.receiver_id
+          ELSE dm.sender_id
+        END as participant_id,
+        CASE 
+          WHEN dm.sender_id = $1 THEN u2.username
+          ELSE u1.username
+        END as participant_username,
+        CASE 
+          WHEN dm.sender_id = $1 THEN u2.name
+          ELSE u1.name
+        END as participant_name,
+        CASE 
+          WHEN dm.sender_id = $1 THEN u2.avatar_url
+          ELSE u1.avatar_url
+        END as participant_avatar,
+        dm.content as last_message,
+        dm.created_at as last_message_time,
+        dm.sender_id as last_message_sender_id,
+        COUNT(CASE 
+          WHEN dm.sender_id != $1 AND NOT dm.read THEN 1 
+        END) as unread_count
+      FROM direct_messages dm
+      JOIN users u1 ON dm.sender_id = u1.id
+      JOIN users u2 ON dm.receiver_id = u2.id
+      WHERE dm.id IN (
+        SELECT MAX(id) 
+        FROM direct_messages 
+        WHERE sender_id = $1 OR receiver_id = $1
+        GROUP BY CASE 
+          WHEN sender_id = $1 THEN receiver_id
+          ELSE sender_id
+        END
+      )
+      GROUP BY 
+        CASE 
+          WHEN dm.sender_id = $1 THEN dm.receiver_id
+          ELSE dm.sender_id
+        END,
+        CASE 
+          WHEN dm.sender_id = $1 THEN u2.username
+          ELSE u1.username
+        END,
+        CASE 
+          WHEN dm.sender_id = $1 THEN u2.name
+          ELSE u1.name
+        END,
+        CASE 
+          WHEN dm.sender_id = $1 THEN u2.avatar_url
+          ELSE u1.avatar_url
+        END,
+        dm.content,
+        dm.created_at,
+        dm.sender_id
+      ORDER BY last_message_time DESC
+    `, [currentUserId]);
+
+    // Format the response to match the expected structure
+    const chats = conversations.rows.map(row => ({
+      id: `chat_${row.participant_id}`, // Generate a chat ID
+      participants: [
+        {
+          id: row.participant_id,
+          username: row.participant_username,
+          name: row.participant_name,
+          avatarUrl: row.participant_avatar
+        }
+      ],
+      lastMessage: row.last_message ? {
+        content: row.last_message,
+        createdAt: row.last_message_time,
+        senderId: row.last_message_sender_id
+      } : undefined,
+      unreadCount: parseInt(row.unread_count) || 0,
+      createdAt: row.last_message_time
+    }));
+
+    res.json({ chats });
+  } catch (error) {
+    console.error('Error fetching direct chats:', error);
+    res.status(500).json({ error: 'Failed to fetch direct chats' });
+  }
+});
+
 export default router;

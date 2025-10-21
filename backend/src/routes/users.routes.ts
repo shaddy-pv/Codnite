@@ -18,7 +18,8 @@ router.get('/suggested', authenticateToken, async (req: any, res) => {
         c.name as college_name, c.short_name as college_short_name,
         COUNT(DISTINCT p.id) as post_count,
         COUNT(DISTINCT s.id) as submission_count,
-        COUNT(DISTINCT f.follower_id) as follower_count
+        COUNT(DISTINCT f.follower_id) as follower_count,
+        CASE WHEN u.college_id = (SELECT college_id FROM users WHERE id = $1) THEN 1 ELSE 0 END as same_college_priority
       FROM users u
       LEFT JOIN colleges c ON u.college_id = c.id
       LEFT JOIN posts p ON u.id = p.author_id
@@ -33,9 +34,9 @@ router.get('/suggested', authenticateToken, async (req: any, res) => {
         OR u.points > 0
         OR EXISTS (SELECT 1 FROM posts WHERE author_id = u.id)
       )
-      GROUP BY u.id, u.username, u.name, u.avatar_url, u.points, u.bio, c.name, c.short_name
+      GROUP BY u.id, u.username, u.name, u.avatar_url, u.points, u.bio, c.name, c.short_name, u.college_id
       ORDER BY 
-        CASE WHEN u.college_id = (SELECT college_id FROM users WHERE id = $1) THEN 1 ELSE 0 END DESC,
+        same_college_priority DESC,
         follower_count DESC,
         u.points DESC,
         post_count DESC
@@ -113,7 +114,7 @@ router.get('/trending', async (req, res) => {
         recentAcceptedCount: parseInt(row.recent_accepted_count),
         followerCount: parseInt(row.follower_count),
       },
-      activityScore: parseInt(row.activity_score),
+      activityScore: (parseInt(row.recent_post_count) + parseInt(row.recent_submission_count)) * 10,
     }));
 
     res.json({ trendingUsers });

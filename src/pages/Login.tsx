@@ -33,24 +33,52 @@ const Login: React.FC<LoginProps> = ({ onLogin, onSwitchToRegister }) => {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!validateAllFields()) {
-      return;
-    }
-
+    console.log('🚀 Login form submitted');
+    console.log('📝 Form fields:', { email: fields.email.value, password: fields.password.value ? '***' : 'empty' });
+    
+    // Skip validation for now to test
+    console.log('⏭️ Skipping validation for testing...');
     setIsLoading(true);
 
     try {
+      console.log('Making API call to login endpoint...');
       const data = await authAPI.login({
         email: fields.email.value,
         password: fields.password.value
       });
 
-      localStorage.setItem('token', data.token);
-      success('Welcome back!', 'You have been successfully logged in.');
-      onLogin(data.user, data.token);
+      console.log('Login API response received:', data);
+      
+      if (data.token && data.user) {
+        console.log('✅ Valid response, storing token and calling onLogin...');
+        console.log('💾 Storing token:', data.token.substring(0, 30) + '...');
+        console.log('👤 Storing user:', data.user.name, data.user.email);
+        
+        localStorage.setItem('token', data.token);
+        localStorage.setItem('user', JSON.stringify(data.user));
+        
+        console.log('🎉 Calling onLogin callback...');
+        success('Welcome back!', 'You have been successfully logged in.');
+        onLogin(data.user, data.token);
+        
+        console.log('✅ onLogin called successfully');
+        console.log('🎯 App should now redirect to main dashboard');
+      } else {
+        console.error('❌ Invalid response structure:', data);
+        console.error('🔍 Expected: { token: string, user: object }');
+        console.error('🔍 Received:', Object.keys(data));
+        throw new Error('Invalid response from server');
+      }
     } catch (error: any) {
+      console.error('Login error details:', {
+        message: error.message,
+        response: error.response,
+        status: error.status,
+        stack: error.stack
+      });
       handleApiError(error, 'Login Failed');
     } finally {
+      console.log('Login process completed, setting loading to false');
       setIsLoading(false);
     }
   };
@@ -93,7 +121,7 @@ const Login: React.FC<LoginProps> = ({ onLogin, onSwitchToRegister }) => {
             disabled={isLoading || !isValid}
             isLoading={isLoading}
             fullWidth
-            className="bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="bg-primary-600 hover:bg-primary-700 text-white py-2 px-4 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isLoading ? 'Signing in...' : 'Sign In'}
           </Button>
@@ -104,7 +132,7 @@ const Login: React.FC<LoginProps> = ({ onLogin, onSwitchToRegister }) => {
             Don't have an account?{' '}
             <button
               onClick={onSwitchToRegister}
-              className="text-blue-400 hover:text-blue-300 font-medium"
+              className="text-primary-400 hover:text-primary-300 font-medium"
             >
               Sign up
             </button>

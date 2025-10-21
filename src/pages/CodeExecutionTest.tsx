@@ -29,82 +29,51 @@ const CodeExecutionTest: React.FC = () => {
   const [executionResults, setExecutionResults] = useState<any[]>([]);
   const { success, error: showError } = useToast();
 
-  // Mock problems data
+  // Load real problems from API
   useEffect(() => {
-    const mockProblems: Problem[] = [
-      {
-        id: '1',
-        title: 'Two Sum',
-        description: 'Given an array of integers nums and an integer target, return indices of the two numbers such that they add up to target.',
-        difficulty: 'easy',
-        examples: [
+    const loadProblems = async () => {
+      try {
+        const response = await api.getProblems(1, 10);
+        if (response.problems && response.problems.length > 0) {
+          setProblems(response.problems);
+          setSelectedProblem(response.problems[0]);
+        }
+      } catch (error) {
+        console.error('Failed to load problems:', error);
+        // Fallback to mock problems if API fails
+        const mockProblems: Problem[] = [
           {
-            input: 'nums = [2,7,11,15], target = 9',
-            expectedOutput: '[0,1]',
-            explanation: 'Because nums[0] + nums[1] == 9, we return [0, 1].'
-          },
-          {
-            input: 'nums = [3,2,4], target = 6',
-            expectedOutput: '[1,2]',
-            explanation: 'Because nums[1] + nums[2] == 6, we return [1, 2].'
+            id: '8ec02275-7f38-4dfb-beea-d71336c3a13c',
+            title: 'Two Sum',
+            description: 'Given an array of integers nums and an integer target, return indices of the two numbers such that they add up to target.',
+            difficulty: 'easy',
+            examples: [
+              {
+                input: 'nums = [2,7,11,15], target = 9',
+                expectedOutput: '[0,1]',
+                explanation: 'Because nums[0] + nums[1] == 9, we return [0, 1].'
+              },
+              {
+                input: 'nums = [3,2,4], target = 6',
+                expectedOutput: '[1,2]',
+                explanation: 'Because nums[1] + nums[2] == 6, we return [1, 2].'
+              }
+            ],
+            constraints: [
+              '2 <= nums.length <= 10^4',
+              '-10^9 <= nums[i] <= 10^9',
+              '-10^9 <= target <= 10^9',
+              'Only one valid answer exists.'
+            ],
+            tags: ['Array', 'Hash Table']
           }
-        ],
-        constraints: [
-          '2 <= nums.length <= 10^4',
-          '-10^9 <= nums[i] <= 10^9',
-          '-10^9 <= target <= 10^9',
-          'Only one valid answer exists.'
-        ],
-        tags: ['Array', 'Hash Table']
-      },
-      {
-        id: '2',
-        title: 'Add Two Numbers',
-        description: 'You are given two non-empty linked lists representing two non-negative integers. The digits are stored in reverse order, and each of their nodes contains a single digit. Add the two numbers and return the sum as a linked list.',
-        difficulty: 'medium',
-        examples: [
-          {
-            input: 'l1 = [2,4,3], l2 = [5,6,4]',
-            expectedOutput: '[7,0,8]',
-            explanation: '342 + 465 = 807'
-          }
-        ],
-        constraints: [
-          'The number of nodes in each linked list is in the range [1, 100].',
-          '0 <= Node.val <= 9',
-          'It is guaranteed that the list represents a number that does not have leading zeros.'
-        ],
-        tags: ['Linked List', 'Math', 'Recursion']
-      },
-      {
-        id: '3',
-        title: 'Longest Substring Without Repeating Characters',
-        description: 'Given a string s, find the length of the longest substring without repeating characters.',
-        difficulty: 'medium',
-        examples: [
-          {
-            input: 's = "abcabcbb"',
-            expectedOutput: '3',
-            explanation: 'The answer is "abc", with the length of 3.'
-          },
-          {
-            input: 's = "bbbbb"',
-            expectedOutput: '1',
-            explanation: 'The answer is "b", with the length of 1.'
-          }
-        ],
-        constraints: [
-          '0 <= s.length <= 5 * 10^4',
-          's consists of English letters, digits, symbols and spaces.'
-        ],
-        tags: ['Hash Table', 'String', 'Sliding Window']
+        ];
+        setProblems(mockProblems);
+        setSelectedProblem(mockProblems[0]);
       }
-    ];
+    };
 
-    setProblems(mockProblems);
-    if (mockProblems.length > 0) {
-      setSelectedProblem(mockProblems[0]);
-    }
+    loadProblems();
   }, []);
 
   const handleCodeExecution = async (code: string, language: string) => {
@@ -115,10 +84,10 @@ const CodeExecutionTest: React.FC = () => {
       const result = await api.executeCode({
         code,
         language,
-        testCases: selectedProblem.examples.map(ex => ({
+        testCases: selectedProblem.examples?.map(ex => ({
           input: ex.input,
           expectedOutput: ex.expectedOutput
-        }))
+        })) || []
       });
 
       setExecutionResults(prev => [...prev, {
@@ -226,7 +195,7 @@ const CodeExecutionTest: React.FC = () => {
                       {problem.description.substring(0, 100)}...
                     </p>
                     <div className="flex flex-wrap gap-1">
-                      {problem.tags.slice(0, 2).map((tag) => (
+                      {problem.tags?.slice(0, 2).map((tag) => (
                         <span
                           key={tag}
                           className="px-2 py-1 bg-neutral-200 dark:bg-neutral-700 text-neutral-700 dark:text-neutral-300 text-xs rounded"
@@ -266,7 +235,7 @@ const CodeExecutionTest: React.FC = () => {
                       Examples
                     </h3>
                     <div className="space-y-4">
-                      {selectedProblem.examples.map((example, index) => (
+                      {selectedProblem.examples?.map((example, index) => (
                         <div key={index} className="bg-neutral-50 dark:bg-neutral-800 p-4 rounded-lg">
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
@@ -304,7 +273,7 @@ const CodeExecutionTest: React.FC = () => {
                       Constraints
                     </h3>
                     <ul className="list-disc list-inside space-y-1 text-neutral-700 dark:text-neutral-300">
-                      {selectedProblem.constraints.map((constraint, index) => (
+                      {selectedProblem.constraints?.map((constraint, index) => (
                         <li key={index}>{constraint}</li>
                       ))}
                     </ul>

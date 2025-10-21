@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🔧 Step-by-Step Authentication Debug</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background: #1a1a1a; color: white; }
+        .container { max-width: 1000px; margin: 0 auto; }
+        .section { margin: 20px 0; padding: 20px; border: 1px solid #333; border-radius: 8px; }
+        .success { background: #155724; border: 1px solid #c3e6cb; }
+        .error { background: #721c24; border: 1px solid #f5c6cb; }
+        .info { background: #0c5460; border: 1px solid #bee5eb; }
+        .warning { background: #5c4d00; border: 1px solid #d29922; }
+        button { background: #007bff; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; margin: 5px; }
+        button:hover { background: #0056b3; }
+        .debug { background: #333; border: 1px solid #666; font-family: monospace; font-size: 12px; padding: 15px; border-radius: 4px; white-space: pre-wrap; max-height: 300px; overflow-y: auto; }
+        input { width: 100%; padding: 10px; margin: 5px 0; border: 1px solid #555; border-radius: 4px; background: #333; color: white; }
+        .step { margin: 10px 0; padding: 10px; border-left: 4px solid #007bff; background: #222; }
+        .step.completed { border-left-color: #28a745; }
+        .step.failed { border-left-color: #dc3545; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 Step-by-Step Authentication Debug</h1>
+        
+        <div class="section warning">
+            <h2>🚨 Current Issue</h2>
+            <div class="warning">
+                <strong>Problem:</strong> Login succeeds on backend (status 200) but frontend doesn't respond<br><br>
+                <strong>What we're testing:</strong> Step-by-step authentication flow to find where it breaks<br><br>
+                <strong>Expected:</strong> After successful login, app should show main dashboard
+            </div>
+        </div>
+        
+        <div class="section info">
+            <h2>🧪 Step-by-Step Test</h2>
+            <div class="info">
+                <p>Follow these steps in order to identify where the authentication breaks:</p>
+                
+                <div class="step" id="step1">
+                    <strong>Step 1:</strong> Test API directly
+                    <button onclick="testStep1()">Test API</button>
+                </div>
+                
+                <div class="step" id="step2">
+                    <strong>Step 2:</strong> Test localStorage storage
+                    <button onclick="testStep2()">Test Storage</button>
+                </div>
+                
+                <div class="step" id="step3">
+                    <strong>Step 3:</strong> Test auth verification
+                    <button onclick="testStep3()">Test Auth Check</button>
+                </div>
+                
+                <div class="step" id="step4">
+                    <strong>Step 4:</strong> Test app behavior
+                    <button onclick="testStep4()">Test App</button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="section">
+            <h2>📊 Test Results</h2>
+            <div class="debug" id="testResults">Waiting for test results...</div>
+        </div>
+        
+        <div class="section">
+            <h2>🔍 Current State</h2>
+            <div class="debug" id="currentState">Loading current state...</div>
+        </div>
+        
+        <div class="section">
+            <h2>🛠️ Debug Tools</h2>
+            <button onclick="openMainApp()">Open Codnite App</button>
+            <button onclick="clearStorage()">Clear Storage</button>
+            <button onclick="runAllTests()">Run All Tests</button>
+            <button onclick="checkConsole()">Check Console</button>
+        </div>
+        
+        <div class="section success">
+            <h2>✅ What Should Happen</h2>
+            <div class="success">
+                <strong>After successful login:</strong><br>
+                1. ✅ API returns 200 with token and user data<br>
+                2. ✅ Token and user stored in localStorage<br>
+                3. ✅ App state updated (isAuthenticated = true)<br>
+                4. ✅ App re-renders and shows main dashboard<br>
+                5. ✅ User stays logged in on page refresh<br><br>
+                <strong>If any step fails, that's where the issue is!</strong>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let testResults = [];
+        
+        function addResult(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            testResults.push({ timestamp, message, type });
+            updateResults();
+        }
+        
+        function updateResults() {
+            const resultsDiv = document.getElementById('testResults');
+            resultsDiv.innerHTML = testResults.map(result => 
+                `[${result.timestamp}] ${result.message}`
+            ).join('\n');
+            resultsDiv.scrollTop = resultsDiv.scrollHeight;
+        }
+        
+        function updateCurrentState() {
+            const token = localStorage.getItem('token');
+            const user = localStorage.getItem('user');
+            
+            let state = 'Current State:\n\n';
+            state += `Token: ${token ? 'EXISTS (' + token.substring(0, 30) + '...)' : 'NONE'}\n`;
+            state += `User: ${user ? 'EXISTS' : 'NONE'}\n`;
+            
+            if (user) {
+                try {
+                    const userData = JSON.parse(user);
+                    state += `User Name: ${userData.name}\n`;
+                    state += `User Email: ${userData.email}\n`;
+                } catch (e) {
+                    state += `User Parse Error: ${e.message}\n`;
+                }
+            }
+            
+            state += `\nCurrent Time: ${new Date().toLocaleString()}\n`;
+            
+            document.getElementById('currentState').innerHTML = state;
+        }
+        
+        async function testStep1() {
+            addResult('🔐 Step 1: Testing API directly...');
+            
+            try {
+                const response = await fetch('http://localhost:5000/api/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        email: 'shadan@example.com',
+                        password: 'Shadan700@#'
+                    })
+                });
+                
+                addResult(`📡 API Response: ${response.status} ${response.statusText}`);
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    addResult(`✅ API Success: Got token and user data`);
+                    addResult(`👤 User: ${data.user.name} (${data.user.email})`);
+                    addResult(`🔑 Token: ${data.token.substring(0, 30)}...`);
+                    
+                    // Store for next step
+                    window.testData = data;
+                    
+                    document.getElementById('step1').classList.add('completed');
+                    addResult(`✅ Step 1 PASSED: API is working`);
+                } else {
+                    const error = await response.json();
+                    addResult(`❌ API Failed: ${error.error}`);
+                    document.getElementById('step1').classList.add('failed');
+                    addResult(`❌ Step 1 FAILED: API error`);
+                }
+            } catch (error) {
+                addResult(`💥 API Error: ${error.message}`);
+                document.getElementById('step1').classList.add('failed');
+                addResult(`❌ Step 1 FAILED: Network error`);
+            }
+            
+            updateCurrentState();
+        }
+        
+        async function testStep2() {
+            addResult('💾 Step 2: Testing localStorage storage...');
+            
+            if (!window.testData) {
+                addResult(`❌ No test data found. Run Step 1 first.`);
+                document.getElementById('step2').classList.add('failed');
+                return;
+            }
+            
+            try {
+                localStorage.setItem('token', window.testData.token);
+                localStorage.setItem('user', JSON.stringify(window.testData.user));
+                
+                addResult(`✅ Data stored in localStorage`);
+                
+                // Verify storage
+                const storedToken = localStorage.getItem('token');
+                const storedUser = localStorage.getItem('user');
+                
+                if (storedToken && storedUser) {
+                    addResult(`✅ Storage verification: Data exists`);
+                    document.getElementById('step2').classList.add('completed');
+                    addResult(`✅ Step 2 PASSED: localStorage working`);
+                } else {
+                    addResult(`❌ Storage verification: Data missing`);
+                    document.getElementById('step2').classList.add('failed');
+                    addResult(`❌ Step 2 FAILED: Storage issue`);
+                }
+            } catch (error) {
+                addResult(`💥 Storage Error: ${error.message}`);
+                document.getElementById('step2').classList.add('failed');
+                addResult(`❌ Step 2 FAILED: Storage error`);
+            }
+            
+            updateCurrentState();
+        }
+        
+        async function testStep3() {
+            addResult('🔍 Step 3: Testing auth verification...');
+            
+            const token = localStorage.getItem('token');
+            if (!token) {
+                addResult(`❌ No token found. Run Step 2 first.`);
+                document.getElementById('step3').classList.add('failed');
+                return;
+            }
+            
+            try {
+                const response = await fetch('http://localhost:5000/api/auth/me', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                    },
+                });
+                
+                addResult(`📡 Auth check response: ${response.status}`);
+                
+                if (response.ok) {
+                    const userData = await response.json();
+                    addResult(`✅ Auth check successful`);
+                    addResult(`👤 User: ${userData.name} (${userData.email})`);
+                    document.getElementById('step3').classList.add('completed');
+                    addResult(`✅ Step 3 PASSED: Auth verification working`);
+                } else {
+                    addResult(`❌ Auth check failed: ${response.status}`);
+                    document.getElementById('step3').classList.add('failed');
+                    addResult(`❌ Step 3 FAILED: Auth verification failed`);
+                }
+            } catch (error) {
+                addResult(`💥 Auth check error: ${error.message}`);
+                document.getElementById('step3').classList.add('failed');
+                addResult(`❌ Step 3 FAILED: Auth check error`);
+            }
+            
+            updateCurrentState();
+        }
+        
+        async function testStep4() {
+            addResult('🎭 Step 4: Testing app behavior...');
+            
+            const token = localStorage.getItem('token');
+            const user = localStorage.getItem('user');
+            
+            if (!token || !user) {
+                addResult(`❌ No stored data found. Run previous steps first.`);
+                document.getElementById('step4').classList.add('failed');
+                return;
+            }
+            
+            addResult(`✅ Stored data exists`);
+            addResult(`🎯 App should now show main dashboard`);
+            addResult(`🔍 Opening app to test...`);
+            
+            // Open the app
+            const appWindow = window.open('http://localhost:5173', '_blank');
+            
+            addResult(`📱 App opened in new tab`);
+            addResult(`🔍 Check if app shows main dashboard or login form`);
+            addResult(`📝 If login form: Frontend issue`);
+            addResult(`📝 If main dashboard: Working correctly`);
+            
+            document.getElementById('step4').classList.add('completed');
+            addResult(`✅ Step 4 COMPLETED: Check the opened app`);
+        }
+        
+        function openMainApp() {
+            addResult(`🚀 Opening Codnite app...`);
+            window.open('http://localhost:5173', '_blank');
+        }
+        
+        function clearStorage() {
+            addResult(`🗑️ Clearing storage...`);
+            localStorage.clear();
+            sessionStorage.clear();
+            window.testData = null;
+            
+            // Reset step indicators
+            document.querySelectorAll('.step').forEach(step => {
+                step.classList.remove('completed', 'failed');
+            });
+            
+            updateCurrentState();
+            addResult(`✅ Storage cleared`);
+        }
+        
+        function runAllTests() {
+            addResult(`🧪 Running all tests in sequence...`);
+            clearStorage();
+            
+            setTimeout(() => testStep1(), 500);
+            setTimeout(() => testStep2(), 1500);
+            setTimeout(() => testStep3(), 2500);
+            setTimeout(() => testStep4(), 3500);
+        }
+        
+        function checkConsole() {
+            addResult(`🔍 Check the browser console for detailed logs`);
+            addResult(`Look for messages starting with emojis like 🚀, ✅, ❌, etc.`);
+            addResult(`The app should log every step of the authentication process`);
+        }
+        
+        // Initial setup
+        addResult(`🔧 Step-by-step authentication debug tool initialized`);
+        updateCurrentState();
+        
+        // Update state every 2 seconds
+        setInterval(updateCurrentState, 2000);
+    </script>
+</body>
+</html>

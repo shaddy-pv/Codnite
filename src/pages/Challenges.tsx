@@ -156,7 +156,7 @@ const Challenges: React.FC = () => {
           onClick={() => setActiveTab('upcoming')} 
           className={`py-3 px-6 border-b-2 transition-colors ${
             activeTab === 'upcoming' 
-              ? 'border-blue-500 text-blue-500' 
+              ? 'border-neutral-500 text-neutral-300' 
               : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
           }`}
         >
@@ -166,7 +166,7 @@ const Challenges: React.FC = () => {
           onClick={() => setActiveTab('ongoing')} 
           className={`py-3 px-6 border-b-2 transition-colors ${
             activeTab === 'ongoing' 
-              ? 'border-blue-500 text-blue-500' 
+              ? 'border-neutral-500 text-neutral-300' 
               : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
           }`}
         >
@@ -176,7 +176,7 @@ const Challenges: React.FC = () => {
           onClick={() => setActiveTab('past')} 
           className={`py-3 px-6 border-b-2 transition-colors ${
             activeTab === 'past' 
-              ? 'border-blue-500 text-blue-500' 
+              ? 'border-neutral-500 text-neutral-300' 
               : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
           }`}
         >

@@ -13,7 +13,7 @@ interface PerformanceMetrics {
 export const PerformanceMonitor: React.FC<{
   enabled?: boolean;
   onMetrics?: (metrics: PerformanceMetrics) => void;
-}> = ({ enabled = process.env.NODE_ENV === 'development', onMetrics }) => {
+}> = ({ enabled = false, onMetrics }) => {
   const [metrics, setMetrics] = useState<PerformanceMetrics>({
     fcp: null,
     lcp: null,

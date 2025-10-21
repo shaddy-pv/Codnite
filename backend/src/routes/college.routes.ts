@@ -29,7 +29,7 @@ router.get('/', async (req, res) => {
 
     let collegesQuery = `
       SELECT 
-        c.id, c.name, c.short_name, c.logo_url, c.location, c.rank, c.description,
+        c.id, c.name, c.short_name, c.logo_url, c.location, c.city, c.state, c.rank, c.description,
         COUNT(u.id) as member_count
       FROM colleges c
       LEFT JOIN users u ON c.id = u.college_id
@@ -42,7 +42,7 @@ router.get('/', async (req, res) => {
     }
 
     collegesQuery += `
-      GROUP BY c.id, c.name, c.short_name, c.logo_url, c.location, c.rank, c.description
+      GROUP BY c.id, c.name, c.short_name, c.logo_url, c.location, c.city, c.state, c.rank, c.description
       ORDER BY c.rank ASC NULLS LAST, c.name ASC
       LIMIT $${queryParams.length + 1} OFFSET $${queryParams.length + 2}
     `;
@@ -66,6 +66,8 @@ router.get('/', async (req, res) => {
       shortName: row.short_name,
       logoUrl: row.logo_url,
       location: row.location,
+      city: row.city,
+      state: row.state,
       rank: row.rank,
       description: row.description,
       memberCount: parseInt(row.member_count),
@@ -100,14 +102,14 @@ router.get('/:id', async (req, res) => {
 
     const collegeQuery = `
       SELECT 
-        c.id, c.name, c.short_name, c.logo_url, c.location, c.rank, c.description,
+        c.id, c.name, c.short_name, c.logo_url, c.location, c.city, c.state, c.rank, c.description,
         COUNT(DISTINCT u.id) as member_count,
         COUNT(DISTINCT p.id) as post_count
       FROM colleges c
       LEFT JOIN users u ON c.id = u.college_id
       LEFT JOIN posts p ON u.id = p.author_id
       WHERE c.id = $1
-      GROUP BY c.id, c.name, c.short_name, c.logo_url, c.location, c.rank, c.description
+      GROUP BY c.id, c.name, c.short_name, c.logo_url, c.location, c.city, c.state, c.rank, c.description
     `;
 
     const result = await query(collegeQuery, [collegeId]);
@@ -123,6 +125,8 @@ router.get('/:id', async (req, res) => {
       shortName: college.short_name,
       logoUrl: college.logo_url,
       location: college.location,
+      city: college.city,
+      state: college.state,
       rank: college.rank,
       description: college.description,
       memberCount: parseInt(college.member_count),
@@ -264,13 +268,13 @@ router.get('/:id/posts', async (req, res) => {
 
     const postsQuery = `
       SELECT 
-        p.id, p.title, p.content, p.code, p.language, p.tags, p.created_at, p.updated_at,
+        p.id, p.title, p.content, p.code, p.language, p.tags, p.college_id, p.created_at, p.updated_at,
         u.id as author_id, u.username as author_username, u.name as author_name, u.avatar_url as author_avatar,
         (SELECT COUNT(*) FROM comments c WHERE c.post_id = p.id) as comment_count,
         (SELECT COUNT(*) FROM likes l WHERE l.post_id = p.id) as like_count
       FROM posts p
       JOIN users u ON p.author_id = u.id
-      WHERE u.college_id = $1
+      WHERE p.college_id = $1
       ORDER BY p.created_at DESC
       LIMIT $2 OFFSET $3
     `;
@@ -278,8 +282,7 @@ router.get('/:id/posts', async (req, res) => {
     const countQuery = `
       SELECT COUNT(*) as total 
       FROM posts p
-      JOIN users u ON p.author_id = u.id
-      WHERE u.college_id = $1
+      WHERE p.college_id = $1
     `;
 
     const [postsResult, countResult] = await Promise.all([

@@ -35,9 +35,9 @@ router.get('/', async (req, res) => {
     // Save search to history (only if user is authenticated)
     if (userId) {
       await query(`
-        INSERT INTO search_history (user_id, query, search_type, filters, results_count)
-        VALUES ($1, $2, $3, $4, $5)
-      `, [userId, q, type || 'all', JSON.stringify(searchFilters), 0]);
+        INSERT INTO search_history (user_id, query, results_count)
+        VALUES ($1, $2, $3)
+      `, [userId, q, 0]);
     }
 
     // Search posts
@@ -72,7 +72,7 @@ router.get('/', async (req, res) => {
         ${postWhereClause}
         ORDER BY p.created_at DESC
         LIMIT $${paramIndex} OFFSET $${paramIndex + 1}
-      `, [...postParams, limit, offset]);
+      `, [...postParams, parseInt(limit as string), parseInt(offset as string)]);
 
       results = [...results, ...posts.rows.map(post => ({ ...post, result_type: 'post' }))];
     }
@@ -100,7 +100,7 @@ router.get('/', async (req, res) => {
         ${userWhereClause}
         ORDER BY u.points DESC, u.created_at DESC
         LIMIT $${paramIndex} OFFSET $${paramIndex + 1}
-      `, [...userParams, limit, offset]);
+      `, [...userParams, parseInt(limit as string), parseInt(offset as string)]);
 
       results = [...results, ...users.rows.map(user => ({ ...user, result_type: 'user' }))];
     }
@@ -126,7 +126,7 @@ router.get('/', async (req, res) => {
         ${challengeWhereClause}
         ORDER BY c.created_at DESC
         LIMIT $${paramIndex} OFFSET $${paramIndex + 1}
-      `, [...challengeParams, limit, offset]);
+      `, [...challengeParams, parseInt(limit as string), parseInt(offset as string)]);
 
       results = [...results, ...challenges.rows.map(challenge => ({ ...challenge, result_type: 'challenge' }))];
     }
@@ -139,7 +139,7 @@ router.get('/', async (req, res) => {
         WHERE name ILIKE $1
         ORDER BY usage_count DESC, created_at DESC
         LIMIT $2 OFFSET $3
-      `, [`%${q}%`, limit, offset]);
+      `, [`%${q}%`, parseInt(limit as string), parseInt(offset as string)]);
 
       results = [...results, ...hashtags.rows.map(hashtag => ({ ...hashtag, result_type: 'hashtag' }))];
     }
@@ -149,12 +149,12 @@ router.get('/', async (req, res) => {
       await query(`
         UPDATE search_history 
         SET results_count = $1 
-        WHERE user_id = $2 AND query = $3 AND search_type = $4
+        WHERE user_id = $2 AND query = $3
         AND created_at = (
           SELECT MAX(created_at) FROM search_history 
-          WHERE user_id = $2 AND query = $3 AND search_type = $4
+          WHERE user_id = $2 AND query = $3
         )
-      `, [results.length, userId, q, type || 'all']);
+      `, [results.length, userId, q]);
     }
 
     res.json({
@@ -184,7 +184,7 @@ router.get('/suggestions', authenticateToken, async (req, res) => {
 
     // Get recent searches
     const recentSearches = await query(`
-      SELECT DISTINCT query, search_type
+      SELECT DISTINCT query
       FROM search_history
       WHERE user_id = $1 AND query ILIKE $2
       ORDER BY created_at DESC
@@ -193,8 +193,7 @@ router.get('/suggestions', authenticateToken, async (req, res) => {
 
     suggestions.push(...recentSearches.rows.map(search => ({
       type: 'recent_search',
-      text: search.query,
-      search_type: search.search_type
+      text: search.query
     })));
 
     // Get hashtag suggestions
@@ -241,12 +240,12 @@ router.get('/history', authenticateToken, async (req, res) => {
     const userId = req.user?.userId;
 
     const history = await query(`
-      SELECT query, search_type, filters, results_count, created_at
+      SELECT query, results_count, created_at
       FROM search_history
       WHERE user_id = $1
       ORDER BY created_at DESC
       LIMIT $2 OFFSET $3
-    `, [userId, limit, offset]);
+    `, [userId, parseInt(limit as string), parseInt(offset as string)]);
 
     res.json(history.rows);
   } catch (error) {

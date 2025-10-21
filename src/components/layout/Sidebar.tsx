@@ -1,9 +1,30 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Home, Users, Code, Trophy, BarChart2, User, Settings, Sparkles, Terminal, CheckCircle, Star } from 'lucide-react';
+import { Home, Users, Code, Trophy, BarChart2, User, Settings, Sparkles, Terminal, CheckCircle, Star, MessageSquare } from 'lucide-react';
+import { api } from '../../services/api';
+import { useLevelData } from '../../hooks/useLevelData';
+import LevelUpNotification from '../LevelUpNotification';
 
 const Sidebar: React.FC = () => {
   const location = useLocation();
+  const [userCollegeId, setUserCollegeId] = useState<string | null>(null);
+  const { levelData, loading: levelLoading, showLevelUp, hideLevelUp } = useLevelData();
+  
+  // Load user's college on component mount
+  useEffect(() => {
+    const loadUserCollege = async () => {
+      try {
+        const userData = await api.getMe();
+        setUserCollegeId(userData.collegeId);
+      } catch (error) {
+        console.error('Failed to load user college:', error);
+        // Fallback to MIT if user data can't be loaded
+        setUserCollegeId('mit');
+      }
+    };
+    
+    loadUserCollege();
+  }, []);
   
   const navItems = [
     {
@@ -15,8 +36,15 @@ const Sidebar: React.FC = () => {
     {
       icon: Users,
       label: 'Community',
-      path: '/community/mit',
+      path: userCollegeId ? `/community/${userCollegeId}` : '/community/mit',
       description: 'Connect with peers'
+    },
+    {
+      icon: MessageSquare,
+      label: 'Messages',
+      path: '/messages',
+      description: 'Chat with users',
+      badge: 'New'
     },
      {
        icon: Code,
@@ -59,7 +87,7 @@ const Sidebar: React.FC = () => {
   ];
 
   return (
-    <aside className="w-64 border-r border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 h-full flex flex-col shadow-sm">
+    <aside className="w-64 border-r border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 min-h-screen flex flex-col relative z-20">
       {/* Sidebar Header */}
       <div className="p-6 border-b border-neutral-200 dark:border-neutral-700">
         <div className="flex items-center space-x-3">
@@ -89,7 +117,7 @@ const Sidebar: React.FC = () => {
                     className={`
                       group flex items-center px-4 py-3 rounded-xl transition-all duration-200 relative
                       ${isActive 
-                        ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300 shadow-sm' 
+                        ? '!bg-primary-100 dark:!bg-primary-900/20 !text-primary-700 dark:!text-primary-300 shadow-sm border-r-4 border-primary-600' 
                         : 'text-neutral-600 dark:text-neutral-400 hover:bg-neutral-50 dark:hover:bg-neutral-800 hover:text-neutral-900 dark:hover:text-neutral-100'
                       }
                     `}
@@ -150,35 +178,103 @@ const Sidebar: React.FC = () => {
           
           {/* Progress Bar */}
           <div className="mb-3">
-            <div className="flex justify-between text-xs text-neutral-600 dark:text-neutral-400 mb-1">
-              <span>Level 5</span>
-              <span>2,450 / 3,000 pts</span>
-            </div>
-            <div className="w-full bg-neutral-200 dark:bg-neutral-700 rounded-full h-2">
-              <div 
-                className="bg-gradient-to-r from-primary-500 to-secondary-500 h-2 rounded-full transition-all duration-300"
-                style={{ width: '82%' }}
-              ></div>
-            </div>
+            {levelLoading ? (
+              <div className="animate-pulse">
+                <div className="flex justify-between text-xs text-neutral-600 dark:text-neutral-400 mb-1">
+                  <div className="h-3 w-12 bg-neutral-300 dark:bg-neutral-600 rounded"></div>
+                  <div className="h-3 w-20 bg-neutral-300 dark:bg-neutral-600 rounded"></div>
+                </div>
+                <div className="w-full bg-neutral-200 dark:bg-neutral-700 rounded-full h-2">
+                  <div className="bg-neutral-300 dark:bg-neutral-600 h-2 rounded-full w-1/2"></div>
+                </div>
+              </div>
+            ) : levelData ? (
+              <>
+                <div className="flex justify-between text-xs text-neutral-600 dark:text-neutral-400 mb-1">
+                  <span>Level {levelData.level}</span>
+                  <span>{levelData.points.toLocaleString()} / {levelData.nextLevelPoints.toLocaleString()} pts</span>
+                </div>
+                <div className="w-full bg-neutral-200 dark:bg-neutral-700 rounded-full h-2">
+                  <div 
+                    className="bg-gradient-to-r from-primary-500 to-secondary-500 h-2 rounded-full transition-all duration-500 ease-out"
+                    style={{ width: `${Math.min(levelData.progress, 100)}%` }}
+                  ></div>
+                </div>
+              </>
+            ) : (
+              <div className="text-xs text-neutral-500 dark:text-neutral-400">
+                Unable to load level data
+              </div>
+            )}
           </div>
           
           {/* Achievement Badges */}
           <div className="flex space-x-2">
-            <div className="w-6 h-6 bg-yellow-100 dark:bg-yellow-900/30 rounded-full flex items-center justify-center">
-              <Trophy className="h-3 w-3 text-yellow-600 dark:text-yellow-400" />
+            <div className={`w-6 h-6 rounded-full flex items-center justify-center ${
+              levelData?.badges.trophy === 'gold' ? 'bg-yellow-100 dark:bg-yellow-900/30' :
+              levelData?.badges.trophy === 'silver' ? 'bg-gray-100 dark:bg-gray-900/30' :
+              levelData?.badges.trophy === 'bronze' ? 'bg-orange-100 dark:bg-orange-900/30' :
+              'bg-neutral-200 dark:bg-neutral-700'
+            }`}>
+              <Trophy className={`h-3 w-3 ${
+                levelData?.badges.trophy === 'gold' ? 'text-yellow-600 dark:text-yellow-400' :
+                levelData?.badges.trophy === 'silver' ? 'text-gray-600 dark:text-gray-400' :
+                levelData?.badges.trophy === 'bronze' ? 'text-orange-600 dark:text-orange-400' :
+                'text-neutral-400'
+              }`} />
             </div>
-            <div className="w-6 h-6 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center">
-              <Code className="h-3 w-3 text-blue-600 dark:text-blue-400" />
+            <div className={`w-6 h-6 rounded-full flex items-center justify-center ${
+              levelData?.badges.code === 'gold' ? 'bg-primary-100 dark:bg-primary-900/30' :
+              levelData?.badges.code === 'silver' ? 'bg-gray-100 dark:bg-gray-900/30' :
+              levelData?.badges.code === 'bronze' ? 'bg-orange-100 dark:bg-orange-900/30' :
+              'bg-neutral-200 dark:bg-neutral-700'
+            }`}>
+              <Code className={`h-3 w-3 ${
+                levelData?.badges.code === 'gold' ? 'text-primary-600 dark:text-primary-400' :
+                levelData?.badges.code === 'silver' ? 'text-gray-600 dark:text-gray-400' :
+                levelData?.badges.code === 'bronze' ? 'text-orange-600 dark:text-orange-400' :
+                'text-neutral-400'
+              }`} />
             </div>
-            <div className="w-6 h-6 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center">
-              <CheckCircle className="h-3 w-3 text-green-600 dark:text-green-400" />
+            <div className={`w-6 h-6 rounded-full flex items-center justify-center ${
+              levelData?.badges.check === 'gold' ? 'bg-green-100 dark:bg-green-900/30' :
+              levelData?.badges.check === 'silver' ? 'bg-gray-100 dark:bg-gray-900/30' :
+              levelData?.badges.check === 'bronze' ? 'bg-orange-100 dark:bg-orange-900/30' :
+              'bg-neutral-200 dark:bg-neutral-700'
+            }`}>
+              <CheckCircle className={`h-3 w-3 ${
+                levelData?.badges.check === 'gold' ? 'text-green-600 dark:text-green-400' :
+                levelData?.badges.check === 'silver' ? 'text-gray-600 dark:text-gray-400' :
+                levelData?.badges.check === 'bronze' ? 'text-orange-600 dark:text-orange-400' :
+                'text-neutral-400'
+              }`} />
             </div>
-            <div className="w-6 h-6 bg-neutral-200 dark:bg-neutral-700 rounded-full flex items-center justify-center">
-              <Star className="h-3 w-3 text-neutral-400" />
+            <div className={`w-6 h-6 rounded-full flex items-center justify-center ${
+              levelData?.badges.star === 'gold' ? 'bg-secondary-100 dark:bg-secondary-900/30' :
+              levelData?.badges.star === 'silver' ? 'bg-gray-100 dark:bg-gray-900/30' :
+              levelData?.badges.star === 'bronze' ? 'bg-orange-100 dark:bg-orange-900/30' :
+              'bg-neutral-200 dark:bg-neutral-700'
+            }`}>
+              <Star className={`h-3 w-3 ${
+                levelData?.badges.star === 'gold' ? 'text-secondary-600 dark:text-secondary-400' :
+                levelData?.badges.star === 'silver' ? 'text-gray-600 dark:text-gray-400' :
+                levelData?.badges.star === 'bronze' ? 'text-orange-600 dark:text-orange-400' :
+                'text-neutral-400'
+              }`} />
             </div>
           </div>
         </div>
       </div>
+      
+      {/* Level Up Notification */}
+      {levelData && (
+        <LevelUpNotification
+          isVisible={showLevelUp}
+          newLevel={levelData.level}
+          points={levelData.points}
+          onClose={hideLevelUp}
+        />
+      )}
     </aside>
   );
 };

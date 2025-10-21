@@ -129,10 +129,10 @@ const SearchComponent: React.FC<SearchComponentProps> = ({
 
   const getResultTypeColor = (type: string) => {
     switch (type) {
-      case 'post': return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200';
+      case 'post': return 'bg-primary-100 text-primary-800 dark:bg-primary-900 dark:text-primary-200';
       case 'user': return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
       case 'challenge': return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200';
-      case 'problem': return 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200';
+      case 'problem': return 'bg-secondary-100 text-secondary-800 dark:bg-secondary-900 dark:text-secondary-200';
       default: return 'bg-neutral-100 text-neutral-800 dark:bg-neutral-900 dark:text-neutral-200';
     }
   };
@@ -181,7 +181,7 @@ const SearchComponent: React.FC<SearchComponentProps> = ({
 
       {/* Filter Panel */}
       {showFilterPanel && (
-        <div className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700 rounded-lg shadow-lg p-4 z-20">
+        <div className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700 rounded-lg shadow-lg p-4 z-30">
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <h3 className="font-semibold text-neutral-900 dark:text-neutral-100">Filters</h3>
@@ -244,7 +244,7 @@ const SearchComponent: React.FC<SearchComponentProps> = ({
 
       {/* Search Results */}
       {showResults && (query || results.length > 0) && (
-        <div className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700 rounded-lg shadow-lg max-h-96 overflow-y-auto z-10">
+        <div className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700 rounded-lg shadow-lg max-h-96 overflow-y-auto z-30">
           {isSearching ? (
             <div className="p-4 text-center text-neutral-500 dark:text-neutral-400">
               <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary-600 mx-auto mb-2"></div>

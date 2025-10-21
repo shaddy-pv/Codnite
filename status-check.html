@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🚀 Codnite Status Check</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background: #1a1a1a; color: white; }
+        .container { max-width: 800px; margin: 0 auto; }
+        .status { margin: 20px 0; padding: 20px; border-radius: 8px; }
+        .success { background: #155724; border: 1px solid #c3e6cb; }
+        .error { background: #721c24; border: 1px solid #f5c6cb; }
+        .info { background: #0c5460; border: 1px solid #bee5eb; }
+        button { background: #007bff; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; margin: 5px; }
+        button:hover { background: #0056b3; }
+        .log { background: #333; border: 1px solid #666; font-family: monospace; font-size: 12px; padding: 15px; border-radius: 4px; white-space: pre-wrap; max-height: 200px; overflow-y: auto; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 Codnite Status Check</h1>
+        
+        <div class="status info">
+            <h2>📊 System Status</h2>
+            <div id="statusInfo">Checking...</div>
+        </div>
+        
+        <div class="status">
+            <h2>🔧 Quick Actions</h2>
+            <button onclick="openApp()">Open Codnite App</button>
+            <button onclick="testBackend()">Test Backend</button>
+            <button onclick="testLogin()">Test Login</button>
+            <button onclick="clearStorage()">Clear Storage</button>
+        </div>
+        
+        <div class="status">
+            <h2>📝 Test Log</h2>
+            <div class="log" id="testLog">Ready to test...</div>
+        </div>
+    </div>
+
+    <script>
+        function log(message) {
+            const logDiv = document.getElementById('testLog');
+            const timestamp = new Date().toLocaleTimeString();
+            logDiv.innerHTML += `[${timestamp}] ${message}\n`;
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+        
+        function updateStatus() {
+            const statusDiv = document.getElementById('statusInfo');
+            const token = localStorage.getItem('token');
+            const user = localStorage.getItem('user');
+            
+            let status = 'Frontend Server: ✅ Running on port 5173\n';
+            status += 'Backend Server: Checking...\n';
+            status += `Token: ${token ? '✅ EXISTS' : '❌ NONE'}\n`;
+            status += `User: ${user ? '✅ EXISTS' : '❌ NONE'}\n`;
+            
+            if (user) {
+                try {
+                    const userData = JSON.parse(user);
+                    status += `User Name: ${userData.name}\n`;
+                    status += `User Email: ${userData.email}\n`;
+                } catch (e) {
+                    status += `User Parse Error: ${e.message}\n`;
+                }
+            }
+            
+            statusDiv.innerHTML = status.replace(/\n/g, '<br>');
+        }
+        
+        async function testBackend() {
+            log('Testing backend connection...');
+            try {
+                const response = await fetch('http://localhost:5000/api/health');
+                if (response.ok) {
+                    log('✅ Backend is running');
+                } else {
+                    log('❌ Backend responded with error: ' + response.status);
+                }
+            } catch (error) {
+                log('❌ Backend connection failed: ' + error.message);
+            }
+        }
+        
+        async function testLogin() {
+            log('Testing login...');
+            try {
+                const response = await fetch('http://localhost:5000/api/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        email: 'shadan@example.com',
+                        password: 'Shadan700@#'
+                    })
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    localStorage.setItem('token', data.token);
+                    localStorage.setItem('user', JSON.stringify(data.user));
+                    log('✅ Login successful!');
+                    updateStatus();
+                } else {
+                    log('❌ Login failed: ' + response.status);
+                }
+            } catch (error) {
+                log('❌ Login error: ' + error.message);
+            }
+        }
+        
+        function openApp() {
+            window.open('http://localhost:5173', '_blank');
+            log('Opened Codnite app in new tab');
+        }
+        
+        function clearStorage() {
+            localStorage.clear();
+            sessionStorage.clear();
+            log('Storage cleared');
+            updateStatus();
+        }
+        
+        // Initial setup
+        updateStatus();
+        setInterval(updateStatus, 3000);
+        
+        // Test backend on load
+        setTimeout(testBackend, 1000);
+    </script>
+</body>
+</html>

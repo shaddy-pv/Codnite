@@ -6,6 +6,7 @@ import Avatar from '../ui/Avatar';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import NotificationBell from '../NotificationBell';
+import SearchModal from '../SearchModal';
 import { api } from '../../services/api';
 
 interface NavbarProps {
@@ -18,6 +19,7 @@ const Navbar: React.FC<NavbarProps> = ({ user, onLogout }) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
+  const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
   const [userPoints, setUserPoints] = useState<number>(0);
   const navigate = useNavigate();
 
@@ -48,9 +50,12 @@ const Navbar: React.FC<NavbarProps> = ({ user, onLogout }) => {
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (searchQuery.trim()) {
-      navigate(`/search?q=${encodeURIComponent(searchQuery.trim())}&type=users`);
-      setSearchQuery('');
+      setIsSearchModalOpen(true);
     }
+  };
+
+  const handleSearchClick = () => {
+    setIsSearchModalOpen(true);
   };
 
   // Close dropdown when clicking outside
@@ -68,7 +73,7 @@ const Navbar: React.FC<NavbarProps> = ({ user, onLogout }) => {
   }, [isProfileDropdownOpen]);
 
   return (
-    <header className="sticky top-0 z-50 border-b border-neutral-200 dark:border-neutral-700 bg-white/80 dark:bg-neutral-900/80 backdrop-blur-md">
+    <header className="sticky top-0 z-20 bg-white/80 dark:bg-neutral-900/80 backdrop-blur-md">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
@@ -92,11 +97,13 @@ const Navbar: React.FC<NavbarProps> = ({ user, onLogout }) => {
                 </div>
                 <input 
                   type="text" 
-                  placeholder="Search users..." 
+                  placeholder="Search posts, users, challenges..." 
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2.5 border border-neutral-300 dark:border-neutral-600 rounded-xl bg-neutral-50 dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all duration-200"
+                  onClick={handleSearchClick}
+                  className="w-full pl-10 pr-4 py-2.5 border border-neutral-300 dark:border-neutral-700 rounded-xl bg-neutral-50 dark:bg-[#18181B] text-neutral-900 dark:text-neutral-100 placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-primary-600 focus:border-transparent transition-all duration-200 cursor-pointer"
                 />
+                <div className="absolute -bottom-1 left-0 right-0 h-0.5 bg-gradient-to-r from-primary-600 to-secondary-600 opacity-80" />
               </form>
             </div>
           </div>
@@ -148,7 +155,7 @@ const Navbar: React.FC<NavbarProps> = ({ user, onLogout }) => {
 
                 {/* Profile Dropdown - Fixed positioning */}
                 {isProfileDropdownOpen && (
-                  <div className="absolute top-full right-0 mt-2 w-64 bg-white dark:bg-neutral-800 rounded-xl shadow-lg border border-neutral-200 dark:border-neutral-700 py-2 z-50 animate-in slide-in-from-top-2 duration-200">
+                  <div className="absolute top-full right-0 mt-2 w-64 bg-white dark:bg-neutral-800 rounded-xl shadow-lg border border-neutral-200 dark:border-neutral-700 py-2 z-30 animate-in slide-in-from-top-2 duration-200">
                     <div className="px-4 py-3 border-b border-neutral-200 dark:border-neutral-700">
                       <p className="font-semibold text-neutral-900 dark:text-neutral-100">{user.name}</p>
                       <p className="text-sm text-neutral-500 dark:text-neutral-400">@{user.username}</p>
@@ -266,6 +273,12 @@ const Navbar: React.FC<NavbarProps> = ({ user, onLogout }) => {
           </div>
         )}
       </div>
+      
+      {/* Search Modal */}
+      <SearchModal 
+        isOpen={isSearchModalOpen} 
+        onClose={() => setIsSearchModalOpen(false)} 
+      />
     </header>
   );
 };

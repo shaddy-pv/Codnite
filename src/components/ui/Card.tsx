@@ -54,7 +54,7 @@ const Card: React.FC<CardProps> = ({
     <div className={`bg-dark-600 rounded-xl border border-dark-500 overflow-hidden animate-fade-in ${className}`}>
       {/* Card Header */}
       {author && (
-        <div className="flex items-center p-4 border-b border-dark-500">
+        <div className="flex items-center p-4">
           <Avatar src={author.avatar} size="md" />
           <div className="ml-3">
             <div className="flex items-center">

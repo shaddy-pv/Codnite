@@ -7,33 +7,33 @@ export default {
   theme: {
     extend: {
       colors: {
-        // Primary brand colors
+        // Ember Flow – Primary (Orange) and Secondary (Red)
         primary: {
-          50: '#f0f9ff',
-          100: '#e0f2fe',
-          200: '#bae6fd',
-          300: '#7dd3fc',
-          400: '#38bdf8',
-          500: '#0ea5e9',
-          600: '#0284c7',
-          700: '#0369a1',
-          800: '#075985',
-          900: '#0c4a6e',
-          950: '#082f49',
+          50: '#FFF3E9',
+          100: '#FFE3D1',
+          200: '#FFC4A3',
+          300: '#FFA16D',
+          400: '#FF8640',
+          500: '#FF6F26',
+          600: '#FF6A00', // Accent start
+          700: '#E15600',
+          800: '#BF4600',
+          900: '#993800',
+          950: '#331200',
         },
-        // Secondary accent colors
+        // Secondary accent colors (Red)
         secondary: {
-          50: '#faf5ff',
-          100: '#f3e8ff',
-          200: '#e9d5ff',
-          300: '#d8b4fe',
-          400: '#c084fc',
-          500: '#a855f7',
-          600: '#9333ea',
-          700: '#7c3aed',
-          800: '#6b21a8',
-          900: '#581c87',
-          950: '#3b0764',
+          50: '#FFEDEA',
+          100: '#FFD5CF',
+          200: '#FFB1A6',
+          300: '#FF8B7C',
+          400: '#FF6B5B',
+          500: '#FF4B3B',
+          600: '#FF2D00', // Accent end
+          700: '#D62100',
+          800: '#A91A00',
+          900: '#7A1400',
+          950: '#2B0500',
         },
         // Neutral colors for light mode
         neutral: {
@@ -138,7 +138,7 @@ export default {
         'soft': '0 2px 15px -3px rgba(0, 0, 0, 0.07), 0 10px 20px -2px rgba(0, 0, 0, 0.04)',
         'medium': '0 4px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
         'strong': '0 10px 40px -10px rgba(0, 0, 0, 0.15), 0 2px 10px -2px rgba(0, 0, 0, 0.05)',
-        'glow': '0 0 20px rgba(59, 130, 246, 0.15)',
+        'glow': '0 0 20px rgba(255, 106, 0, 0.18)', // warm ember glow
         'glow-purple': '0 0 20px rgba(168, 85, 247, 0.15)',
       },
       animation: {

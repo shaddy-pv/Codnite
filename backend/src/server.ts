@@ -31,6 +31,7 @@ import optimizedRoutes from './routes/optimized.routes';
 import databaseViewerRoutes from './routes/database-viewer.routes';
 import { NotificationService } from './services/notification.service';
 import testNotificationRoutes from './routes/test-notifications.routes';
+import levelRoutes from './routes/level.routes';
 import uploadRoutes from './routes/upload.routes';
 import config from './config/env';
 
@@ -146,12 +147,28 @@ app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
 // CORS configuration with enhanced security
 app.use(cors({
   origin: (origin, callback) => {
+    console.log('CORS origin check:', origin);
+    console.log('Allowed origins:', config.corsOrigins);
+    
     // Allow requests with no origin (mobile apps, curl, etc.)
-    if (!origin) return callback(null, true);
+    if (!origin) {
+      console.log('No origin provided, allowing request');
+      return callback(null, true);
+    }
+    
+    // In development, be more permissive
+    if (config.nodeEnv === 'development') {
+      if (origin.startsWith('http://localhost:') || origin.startsWith('https://localhost:')) {
+        console.log('Development origin allowed:', origin);
+        return callback(null, true);
+      }
+    }
     
     if (config.corsOrigins.includes(origin)) {
+      console.log('Origin allowed:', origin);
       callback(null, true);
     } else {
+      console.log('Origin not allowed:', origin);
       callback(new Error('Not allowed by CORS'));
     }
   },
@@ -182,22 +199,7 @@ app.use((req, res, next) => {
   next();
 });
 
-// CRITICAL: Fix ALL frontend errors immediately - Override problematic endpoints
-// FIX ALL 500 ERRORS - Return empty success
-app.get('/api/users/suggested', (req, res) => res.json([]));
-app.get('/api/notifications/unread-count', (req, res) => res.json({count: 0}));
-app.get('/api/colleges/:id/members', (req, res) => res.json([]));
-app.get('/api/colleges/:id/leaderboard', (req, res) => res.json([]));
-
-// FIX ALL 404 ERRORS - Return empty data
-app.get('/api/users/me', (req, res) => res.json({user: {id: '1', name: 'User', email: 'user@test.com'}}));
-app.get('/api/users/me/stats', (req, res) => res.json({}));
-app.get('/api/users/me/badges', (req, res) => res.json([]));
-app.get('/api/users/me/skills', (req, res) => res.json([]));
-app.get('/api/users/me/achievements', (req, res) => res.json([]));
-app.get('/api/users/me/activity', (req, res) => res.json([]));
-app.get('/api/users/me/follow-status', (req, res) => res.json({}));
-app.get('/api/users/me/posts', (req, res) => res.json([]));
+// Mock responses removed - using proper route handlers
 
 // Routes
 if (config.nodeEnv === 'production') {
@@ -224,6 +226,7 @@ app.use('/api/optimized', optimizedRoutes);
 app.use('/api/db', databaseViewerRoutes);
 app.use('/api/test-notifications', testNotificationRoutes(notificationService));
 app.use('/api/upload', uploadRoutes);
+app.use('/api/level', levelRoutes);
 
 // Enhanced health check with detailed information
 app.get('/api/health', enhancedHealthCheck);

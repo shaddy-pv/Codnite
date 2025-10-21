@@ -21,6 +21,7 @@ const Profile: React.FC = () => {
   const [activeTab, setActiveTab] = useState('posts');
   const [user, setUser] = useState<User | null>(null);
   const [posts, setPosts] = useState<Post[]>([]);
+  const [savedPosts, setSavedPosts] = useState<Post[]>([]);
   const [stats, setStats] = useState<any>(null);
   const [badges, setBadges] = useState<any[]>([]);
   const [achievements, setAchievements] = useState<any[]>([]);
@@ -46,6 +47,7 @@ const Profile: React.FC = () => {
       console.log('Parsed user:', parsedUser);
       const isCurrent = parsedUser.id === userId || userId === 'me';
       console.log('Is current user:', isCurrent);
+      console.log('User ID comparison:', parsedUser.id, '===', userId, '=', parsedUser.id === userId);
       setIsCurrentUser(isCurrent);
     }
   };
@@ -124,24 +126,87 @@ const Profile: React.FC = () => {
 
   // Load user posts
   const loadUserPosts = async () => {
-    if (!userId) return;
+    if (!userId) {
+      console.log('No userId provided');
+      return;
+    }
     
     try {
-      const userPosts = await api.getUserPosts(userId);
+      console.log('Loading posts for userId:', userId);
+      
+      // Determine the actual user ID to fetch (same logic as loadUser)
+      let actualUserId = userId;
+      if (userId === 'me') {
+        const currentUser = localStorage.getItem('user');
+        if (currentUser) {
+          const parsedUser = JSON.parse(currentUser);
+          actualUserId = parsedUser.id;
+          console.log('Using userId from localStorage for posts:', actualUserId);
+        } else {
+          try {
+            const currentUserData = await api.getMe();
+            actualUserId = currentUserData.id;
+            console.log('Using userId from API for posts:', actualUserId);
+          } catch (error) {
+            console.error('Failed to get current user for posts:', error);
+            setPosts([]);
+            return;
+          }
+        }
+      }
+      
+      console.log('API call: api.getUserPosts(actualUserId)');
+      const userPosts = await api.getUserPosts(actualUserId);
+      console.log('Raw API response:', userPosts);
+      console.log('Posts array check:', Array.isArray(userPosts), userPosts?.length);
+      console.log('Setting posts to:', Array.isArray(userPosts) ? userPosts : []);
       setPosts(Array.isArray(userPosts) ? userPosts : []);
     } catch (err: any) {
       console.error('Error loading user posts:', err);
+      console.error('Error details:', err.response?.data || err.message);
       setPosts([]);
       addToast('Failed to load user posts', 'error');
     }
   };
 
+  // Load saved posts
+  const loadSavedPosts = async () => {
+    if (!isCurrentUser) return;
+    
+    try {
+      const { bookmarkApi } = await import('../services/api');
+      const savedPostsData = await bookmarkApi.getBookmarkedPosts(1, 20);
+      setSavedPosts(Array.isArray(savedPostsData.posts) ? savedPostsData.posts : []);
+    } catch (err: any) {
+      // If endpoint is not available (404) or unauthorized, just show empty saved list silently
+      setSavedPosts([]);
+    }
+  };
+
   // Load data on mount
   useEffect(() => {
-    checkIfCurrentUser();
-    loadUser();
-    loadUserPosts();
+    const initializeProfile = async () => {
+      checkIfCurrentUser();
+      await loadUser();
+      await loadUserPosts();
+    };
+    
+    initializeProfile();
   }, [userId]);
+
+  // Load saved posts when isCurrentUser becomes true
+  useEffect(() => {
+    if (isCurrentUser) {
+      loadSavedPosts();
+    }
+  }, [isCurrentUser]);
+
+  // Load saved posts when saved tab is clicked
+  useEffect(() => {
+    if (activeTab === 'saved' && isCurrentUser) {
+      loadSavedPosts();
+    }
+  }, [activeTab, isCurrentUser]);
 
   // Handle profile update
   const handleProfileUpdated = (updatedUser: User) => {
@@ -177,336 +242,484 @@ const Profile: React.FC = () => {
     });
   };
   return (
-    <div className="max-w-screen-xl mx-auto">
-      {/* Profile Header */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden mb-6">
-        {/* Cover Image */}
-        <div className="h-48 bg-gradient-to-r from-blue-500 to-purple-600 relative">
-          <div className="absolute inset-0 bg-black bg-opacity-20"></div>
-        </div>
-        
-        {/* Profile Info */}
-        <div className="p-6 relative">
-          <div className="absolute -top-16 left-6 bg-white dark:bg-gray-800 rounded-xl p-2 border-4 border-white dark:border-gray-800">
-            <Avatar 
-              src={user.avatarUrl} 
-              alt={user.name}
-              size="lg"
-              editable={isCurrentUser}
-              onAvatarChange={(newAvatarUrl) => {
-                setUser(prev => prev ? { ...prev, avatarUrl: newAvatarUrl } : null);
-                // Update localStorage as well
-                const currentUser = localStorage.getItem('user');
-                if (currentUser) {
-                  const parsedUser = JSON.parse(currentUser);
-                  parsedUser.avatarUrl = newAvatarUrl;
-                  localStorage.setItem('user', JSON.stringify(parsedUser));
-                }
-              }}
-            />
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Profile Header */}
+        <div className="bg-slate-800/50 backdrop-blur-sm rounded-2xl border border-slate-700/50 overflow-hidden mb-8 shadow-lg">
+          {/* Cover Image */}
+          <div 
+            className="h-48 relative"
+            style={{
+              backgroundImage: user.coverPhotoUrl 
+                ? `url(${user.coverPhotoUrl})` 
+                : 'linear-gradient(to right, rgb(59 130 246), rgb(147 51 234))',
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
+              backgroundRepeat: 'no-repeat'
+            }}
+          >
+            <div className="absolute inset-0 bg-black bg-opacity-20"></div>
+            
+            {/* Cover Photo Edit Button - Only show for current user */}
             {isCurrentUser && (
-              <div className="absolute -bottom-2 -right-2">
+              <div className="absolute top-4 right-4">
                 <button
                   onClick={() => {
-                    // Trigger avatar upload modal
-                    const avatarElement = document.querySelector('.avatar-edit-button') as HTMLButtonElement;
-                    if (avatarElement) {
-                      avatarElement.click();
-                    }
+                    const input = document.createElement('input');
+                    input.type = 'file';
+                    input.accept = 'image/*';
+                    input.onchange = async (e) => {
+                      const file = (e.target as HTMLInputElement).files?.[0];
+                      if (file) {
+                        try {
+                          const formData = new FormData();
+                          formData.append('coverPhoto', file);
+                          
+                          const result = await api.uploadCoverPhoto(formData);
+                          
+                          if (result.success) {
+                            setUser(prev => prev ? { ...prev, coverPhotoUrl: result.coverPhotoUrl } : null);
+                            addToast('Cover photo updated successfully!', 'success');
+                            
+                            // Update localStorage as well
+                            const currentUser = localStorage.getItem('user');
+                            if (currentUser) {
+                              const parsedUser = JSON.parse(currentUser);
+                              parsedUser.coverPhotoUrl = result.coverPhotoUrl;
+                              localStorage.setItem('user', JSON.stringify(parsedUser));
+                            }
+                          } else {
+                            addToast(result.error || 'Failed to upload cover photo', 'error');
+                          }
+                        } catch (error: any) {
+                          addToast('Failed to upload cover photo', 'error');
+                        }
+                      }
+                    };
+                    input.click();
                   }}
-                  className="bg-primary-600 hover:bg-primary-700 text-white rounded-full p-2 shadow-lg transition-colors duration-200"
-                  title="Change Avatar"
+                  className="bg-slate-800/50 backdrop-blur-sm hover:bg-slate-700/50 rounded-full p-2 transition-all duration-200 group"
+                  title="Change cover photo"
                 >
-                  <Camera className="w-4 h-4" />
+                  <Edit3 className="h-4 w-4 text-white group-hover:text-primary-300" />
                 </button>
               </div>
             )}
+            
+            <div className="absolute bottom-4 right-4">
+              <div className="bg-slate-800/50 backdrop-blur-sm rounded-lg px-3 py-1">
+                <span className="text-white text-sm font-medium">Member since {formatDate(user.createdAt)}</span>
+              </div>
+            </div>
           </div>
           
-          <div className="ml-36 flex flex-col md:flex-row md:items-center justify-between">
-            <div>
-              <div className="flex items-center">
-                <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-                  {user.name}
-                </h1>
-                {badges && badges.length > 0 && (
-                  <div className="ml-3">
-                    <Badge text={badges[0].name} color="purple" size="md" />
-                  </div>
+          {/* Profile Info */}
+          <div className="p-8 relative">
+            <div className="absolute -top-20 left-8 bg-slate-800 rounded-2xl p-3 border-4 border-slate-800 shadow-xl">
+              <Avatar 
+                src={user.avatarUrl} 
+                alt={user.name}
+                size="lg"
+                editable={isCurrentUser}
+                onAvatarChange={(newAvatarUrl) => {
+                  setUser(prev => prev ? { ...prev, avatarUrl: newAvatarUrl } : null);
+                  // Update localStorage as well
+                  const currentUser = localStorage.getItem('user');
+                  if (currentUser) {
+                    const parsedUser = JSON.parse(currentUser);
+                    parsedUser.avatarUrl = newAvatarUrl;
+                    localStorage.setItem('user', JSON.stringify(parsedUser));
+                  }
+                }}
+              />
+              {isCurrentUser && (
+                <div className="absolute -bottom-2 -right-2">
+                  <button
+                    onClick={() => {
+                      // Trigger avatar upload modal
+                      const avatarElement = document.querySelector('.avatar-edit-button') as HTMLButtonElement;
+                      if (avatarElement) {
+                        avatarElement.click();
+                      }
+                    }}
+                    className="bg-primary-600 hover:bg-primary-700 text-white rounded-full p-2 shadow-lg transition-colors duration-200"
+                    title="Change Avatar"
+                  >
+                    <Camera className="w-4 h-4" />
+                  </button>
+                </div>
+              )}
+            </div>
+            
+            <div className="ml-40 flex flex-col md:flex-row md:items-center justify-between">
+              <div>
+                <div className="flex items-center mb-2">
+                  <h1 className="text-3xl font-bold text-white mr-4">
+                    {user.name}
+                  </h1>
+                  {badges && badges.length > 0 && (
+                    <div className="flex space-x-2">
+                      {badges.slice(0, 2).map((badge, index) => (
+                        <Badge 
+                          key={index}
+                          text={badge.name || badge} 
+                          color={index === 0 ? 'primary' : 'secondary'} 
+                          size="md" 
+                        />
+                      ))}
+                    </div>
+                  )}
+                </div>
+                <p className="text-slate-400 text-lg">@{user.username}</p>
+                {user.bio && (
+                  <p className="mt-3 text-slate-300 leading-relaxed max-w-2xl">
+                    {user.bio}
+                  </p>
                 )}
               </div>
-              <p className="text-gray-500 dark:text-gray-400">@{user.username}</p>
+              
+              <div className="flex mt-6 md:mt-0 space-x-3">
+                {isCurrentUser ? (
+                  <Button
+                    variant="outline"
+                    leftIcon={<Edit3 className="h-4 w-4" />}
+                    onClick={() => setIsEditing(true)}
+                    className="border-slate-600 text-slate-300 hover:bg-slate-700 hover:text-white"
+                  >
+                    Edit Profile
+                  </Button>
+                ) : (
+                  <>
+                    <MessageButton
+                      userId={user.id}
+                      userName={user.name}
+                      userAvatar={user.avatarUrl}
+                      size="md"
+                    />
+                    <FollowButton
+                      userId={user.id}
+                      isFollowing={isFollowing}
+                      onFollowChange={setIsFollowing}
+                      size="md"
+                    />
+                  </>
+                )}
+                <Button 
+                  variant="ghost" 
+                  leftIcon={<Share2 className="h-4 w-4" />}
+                  className="text-slate-400 hover:text-white hover:bg-slate-700/50"
+                >
+                  Share
+                </Button>
+              </div>
             </div>
             
-            <div className="flex mt-4 md:mt-0 space-x-2">
-              {isCurrentUser ? (
-                <Button
-                  variant="outline"
-                  leftIcon={<Edit3 className="h-4 w-4" />}
-                  onClick={() => setIsEditing(true)}
-                >
-                  Edit Profile
-                </Button>
-              ) : (
-                <>
-                  <MessageButton
-                    userId={user.id}
-                    userName={user.name}
-                    userAvatar={user.avatarUrl}
-                    size="md"
-                  />
-                  <FollowButton
-                    userId={user.id}
-                    isFollowing={isFollowing}
-                    onFollowChange={setIsFollowing}
-                    size="md"
-                  />
-                </>
-              )}
-              <Button variant="ghost" leftIcon={<Share2 className="h-4 w-4" />}>
-                Share
-              </Button>
+            {/* Links and Info */}
+            <div className="mt-8 pt-6 border-t border-slate-700/50">
+              <div className="flex flex-wrap gap-6">
+                {user.collegeId && (
+                  <div className="flex items-center text-slate-400">
+                    <Award className="h-5 w-5 mr-2" />
+                    <span className="font-medium">{user.collegeId}</span>
+                  </div>
+                )}
+                {user.githubUsername && (
+                  <div className="flex items-center text-slate-400">
+                    <Code className="h-5 w-5 mr-2" />
+                    <a 
+                      href={`https://github.com/${user.githubUsername}`} 
+                      target="_blank" 
+                      rel="noopener noreferrer" 
+                      className="hover:text-primary-400 transition-colors font-medium"
+                    >
+                      {user.githubUsername}
+                    </a>
+                  </div>
+                )}
+                {user.linkedinUrl && (
+                  <div className="flex items-center text-slate-400">
+                    <Linkedin className="h-5 w-5 mr-2" />
+                    <a 
+                      href={user.linkedinUrl} 
+                      target="_blank" 
+                      rel="noopener noreferrer" 
+                      className="hover:text-primary-400 transition-colors font-medium"
+                    >
+                      LinkedIn
+                    </a>
+                  </div>
+                )}
+                <div className="flex items-center text-slate-400">
+                  <Calendar className="h-5 w-5 mr-2" />
+                  <span className="font-medium">Joined {formatDate(user.createdAt)}</span>
+                </div>
+              </div>
+            </div>
+            
+            {/* Stats */}
+            <div className="mt-8 pt-6 border-t border-slate-700/50">
+              <UserStats 
+                user={user} 
+                stats={stats} 
+                onFollowersClick={() => {
+                  setFollowersModalType('followers');
+                  setShowFollowersModal(true);
+                }}
+                onFollowingClick={() => {
+                  setFollowersModalType('following');
+                  setShowFollowersModal(true);
+                }}
+              />
             </div>
           </div>
           
-          {/* Bio and Links */}
-          <div className="mt-6">
-            {user.bio && <p className="mb-4 text-gray-700 dark:text-gray-300">{user.bio}</p>}
+          {/* Enhanced Tabs */}
+          <div className="flex border-t border-slate-700/50 overflow-x-auto">
+            <button
+              onClick={() => setActiveTab('posts')}
+              className={`py-4 px-6 transition-all duration-200 font-medium ${
+                activeTab === 'posts'
+                  ? 'border-b-2 border-primary-600 text-primary-400'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              Posts
+            </button>
+            {isCurrentUser && (
+              <button
+                onClick={() => setActiveTab('saved')}
+                className={`py-4 px-6 transition-all duration-200 font-medium ${
+                  activeTab === 'saved'
+                    ? 'border-b-2 border-primary-600 text-primary-400'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                Saved
+              </button>
+            )}
+            <button
+              onClick={() => setActiveTab('solutions')}
+              className={`py-4 px-6 transition-all duration-200 font-medium ${
+                activeTab === 'solutions'
+                  ? 'border-b-2 border-primary-600 text-primary-400'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              Solutions
+            </button>
+            <button
+              onClick={() => setActiveTab('achievements')}
+              className={`py-4 px-6 transition-all duration-200 font-medium ${
+                activeTab === 'achievements'
+                  ? 'border-b-2 border-primary-600 text-primary-400'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              Achievements
+            </button>
+            <button
+              onClick={() => setActiveTab('badges')}
+              className={`py-4 px-6 transition-all duration-200 font-medium ${
+                activeTab === 'badges'
+                  ? 'border-b-2 border-primary-600 text-primary-400'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              Badges
+            </button>
+          </div>
+        </div>
+      
+        {/* Tab Content */}
+        <div className="flex flex-col lg:flex-row gap-8">
+          {/* Main Content */}
+          <div className="flex-1">
+            {activeTab === 'posts' && (
+              <div className="space-y-6">
+                {!posts || posts.length === 0 ? (
+                  <div className="bg-slate-800/50 backdrop-blur-sm rounded-2xl border border-slate-700/50 p-12 text-center">
+                    <div className="w-16 h-16 bg-slate-700/50 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <MessageSquare className="h-8 w-8 text-slate-400" />
+                    </div>
+                    <h3 className="text-xl font-semibold text-white mb-2">No posts yet</h3>
+                    <p className="text-slate-400">This user hasn't shared any posts yet.</p>
+                  </div>
+                ) : (
+                  posts.map((post, index) => (
+                    <div
+                      key={post.id}
+                      className="transform transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl hover:shadow-slate-900/50"
+                      style={{
+                        animationDelay: `${index * 100}ms`,
+                        animation: 'fadeInUp 0.6s ease-out forwards'
+                      }}
+                    >
+                      <PostCard
+                        post={post}
+                        onLike={() => {}}
+                        onComment={() => {}}
+                        onShare={() => {}}
+                        onBookmark={() => {}}
+                      />
+                    </div>
+                  ))
+                )}
+              </div>
+            )}
             
-            <div className="flex flex-wrap gap-y-2">
-              {user.collegeId && (
-                <div className="flex items-center text-gray-500 dark:text-gray-400 mr-6">
-                  <Award className="h-4 w-4 mr-2" />
-                  <span>{user.collegeId}</span>
+            {activeTab === 'saved' && (
+              <div className="space-y-6">
+                {!savedPosts || savedPosts.length === 0 ? (
+                  <div className="bg-slate-800/50 backdrop-blur-sm rounded-2xl border border-slate-700/50 p-12 text-center">
+                    <div className="w-16 h-16 bg-slate-700/50 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <Bookmark className="h-8 w-8 text-slate-400" />
+                    </div>
+                    <h3 className="text-xl font-semibold text-white mb-2">No saved posts yet</h3>
+                    <p className="text-slate-400">You haven't saved any posts yet. Start exploring and save posts you like!</p>
+                  </div>
+                ) : (
+                  savedPosts.map((post, index) => (
+                    <div
+                      key={post.id}
+                      className="transform transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl hover:shadow-slate-900/50"
+                      style={{
+                        animationDelay: `${index * 100}ms`,
+                        animation: 'fadeInUp 0.6s ease-out forwards'
+                      }}
+                    >
+                      <PostCard
+                        post={post}
+                        onLike={() => {}}
+                        onComment={() => {}}
+                        onShare={() => {}}
+                        onBookmark={() => {}}
+                      />
+                    </div>
+                  ))
+                )}
+              </div>
+            )}
+            
+            {activeTab === 'solutions' && (
+              <div className="bg-slate-800/50 backdrop-blur-sm rounded-2xl border border-slate-700/50 p-12 text-center">
+                <div className="w-16 h-16 bg-slate-700/50 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Code className="h-8 w-8 text-slate-400" />
                 </div>
-              )}
-              {user.githubUsername && (
-                <div className="flex items-center text-gray-500 dark:text-gray-400 mr-6">
-                  <Code className="h-4 w-4 mr-2" />
-                  <a 
-                    href={`https://github.com/${user.githubUsername}`} 
-                    target="_blank" 
-                    rel="noopener noreferrer" 
-                    className="hover:text-blue-500 transition-colors"
-                  >
-                    {user.githubUsername}
-                  </a>
+                <h3 className="text-xl font-semibold text-white mb-2">No solutions yet</h3>
+                <p className="text-slate-400">This user hasn't shared any problem solutions yet.</p>
+              </div>
+            )}
+            
+            {activeTab === 'achievements' && (
+              <div className="space-y-6">
+                {!achievements || achievements.length === 0 ? (
+                  <div className="bg-slate-800/50 backdrop-blur-sm rounded-2xl border border-slate-700/50 p-12 text-center">
+                    <div className="w-16 h-16 bg-slate-700/50 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <Award className="h-8 w-8 text-slate-400" />
+                    </div>
+                    <h3 className="text-xl font-semibold text-white mb-2">No achievements yet</h3>
+                    <p className="text-slate-400">This user hasn't earned any achievements yet.</p>
+                  </div>
+                ) : (
+                  achievements.map((achievement) => (
+                    <div key={achievement.id} className="bg-slate-800/50 backdrop-blur-sm rounded-2xl border border-slate-700/50 p-6 hover:bg-slate-800/70 transition-all duration-300">
+                      <div className="flex">
+                    <div className="bg-gradient-to-r from-primary-600/20 to-secondary-600/20 h-12 w-12 rounded-xl flex items-center justify-center mr-4">
+                          {achievement.icon === 'trophy' && <Award className="h-6 w-6 text-primary-400" />}
+                          {achievement.icon === 'activity' && <Activity className="h-6 w-6 text-primary-400" />}
+                          {achievement.icon === 'star' && <Star className="h-6 w-6 text-primary-400" />}
+                        </div>
+                        <div className="flex-1">
+                          <div className="flex justify-between items-start">
+                            <div>
+                              <h3 className="font-semibold text-white text-lg">
+                                {achievement.title}
+                              </h3>
+                              <p className="text-slate-400">
+                                {achievement.description}
+                              </p>
+                            </div>
+                            <div className="bg-gradient-to-r from-green-500/20 to-emerald-500/20 border border-green-500/30 rounded-full px-3 py-1 text-sm">
+                              <span className="text-green-400 font-medium">+{achievement.points} points</span>
+                            </div>
+                          </div>
+                          <div className="mt-2 text-slate-500 text-sm">
+                            {achievement.date}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            )}
+            
+            {activeTab === 'badges' && (
+              <UserBadges badges={badges || []} />
+            )}
+          </div>
+          
+          {/* Sidebar */}
+          <div className="lg:w-80 space-y-6">
+            {/* Skills */}
+            <div className="bg-slate-800/50 backdrop-blur-sm rounded-2xl border border-slate-700/50 p-6 hover:bg-slate-800/70 transition-all duration-300">
+              <div className="flex items-center mb-6">
+                <div className="w-10 h-10 bg-gradient-to-r from-primary-600 to-secondary-600 rounded-lg flex items-center justify-center mr-3">
+                  <Code className="h-5 w-5 text-white" />
                 </div>
-              )}
-              {user.linkedinUrl && (
-                <div className="flex items-center text-gray-500 dark:text-gray-400 mr-6">
-                  <Linkedin className="h-4 w-4 mr-2" />
-                  <a 
-                    href={user.linkedinUrl} 
-                    target="_blank" 
-                    rel="noopener noreferrer" 
-                    className="hover:text-blue-500 transition-colors"
-                  >
-                    LinkedIn
-                  </a>
+                <h3 className="font-semibold text-white text-lg">Skills</h3>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {!skills || skills.length === 0 ? (
+                  <p className="text-slate-400 text-sm">No skills added yet</p>
+                ) : (
+                  skills.map((skill, index) => (
+                    <Badge
+                      key={index}
+                      text={skill}
+                      color={index % 3 === 0 ? 'primary' : index % 3 === 1 ? 'secondary' : 'primary'}
+                    />
+                  ))
+                )}
+              </div>
+            </div>
+            
+            {/* Recent Activity */}
+            <div className="bg-slate-800/50 backdrop-blur-sm rounded-2xl border border-slate-700/50 p-6 hover:bg-slate-800/70 transition-all duration-300">
+              <div className="flex items-center mb-6">
+                <div className="w-10 h-10 bg-gradient-to-r from-green-500 to-emerald-500 rounded-lg flex items-center justify-center mr-3">
+                  <Activity className="h-5 w-5 text-white" />
                 </div>
-              )}
-              <div className="flex items-center text-gray-500 dark:text-gray-400 mr-6">
-                <Calendar className="h-4 w-4 mr-2" />
-                <span>Joined {formatDate(user.createdAt)}</span>
+                <h3 className="font-semibold text-white text-lg">Recent Activity</h3>
+              </div>
+              <div className="space-y-4">
+                {!activity || activity.length === 0 ? (
+                  <p className="text-slate-400 text-sm">No recent activity</p>
+                ) : (
+                  activity.map((item, index) => (
+                    <div key={index} className="flex p-3 rounded-lg hover:bg-slate-700/50 transition-all duration-200">
+                      <div className="mr-3 mt-1">
+                        <div className="h-2 w-2 rounded-full bg-primary-400"></div>
+                      </div>
+                      <div>
+                        <p className="text-sm text-slate-300">
+                          {item.type === 'post' ? (
+                            <>Created post <span className="text-primary-400 font-medium">{item.title}</span></>
+                          ) : (
+                            <>Solved <span className="text-primary-400 font-medium">{item.problem_title}</span> problem</>
+                          )}
+                        </p>
+                        <p className="text-slate-500 text-xs mt-1">
+                          {new Date(item.created_at).toLocaleDateString()}
+                        </p>
+                      </div>
+                    </div>
+                  ))
+                )}
               </div>
             </div>
           </div>
-          
-          {/* Stats */}
-          <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
-            <UserStats 
-              user={user} 
-              stats={stats} 
-              onFollowersClick={() => {
-                setFollowersModalType('followers');
-                setShowFollowersModal(true);
-              }}
-              onFollowingClick={() => {
-                setFollowersModalType('following');
-                setShowFollowersModal(true);
-              }}
-            />
-          </div>
         </div>
-        
-        {/* Tabs */}
-        <div className="flex border-t border-gray-200 dark:border-gray-700 overflow-x-auto">
-          <button
-            onClick={() => setActiveTab('posts')}
-            className={`py-3 px-6 transition-colors ${
-              activeTab === 'posts'
-                ? 'border-b-2 border-blue-500 text-blue-500'
-                : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
-            }`}
-          >
-            Posts
-          </button>
-          <button
-            onClick={() => setActiveTab('solutions')}
-            className={`py-3 px-6 transition-colors ${
-              activeTab === 'solutions'
-                ? 'border-b-2 border-blue-500 text-blue-500'
-                : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
-            }`}
-          >
-            Solutions
-          </button>
-          <button
-            onClick={() => setActiveTab('achievements')}
-            className={`py-3 px-6 transition-colors ${
-              activeTab === 'achievements'
-                ? 'border-b-2 border-blue-500 text-blue-500'
-                : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
-            }`}
-          >
-            Achievements
-          </button>
-          <button
-            onClick={() => setActiveTab('badges')}
-            className={`py-3 px-6 transition-colors ${
-              activeTab === 'badges'
-                ? 'border-b-2 border-blue-500 text-blue-500'
-                : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
-            }`}
-          >
-            Badges
-          </button>
-        </div>
-      </div>
-      
-      {/* Tab Content */}
-      <div className="flex flex-col md:flex-row gap-6">
-        {/* Main Content */}
-        <div className="flex-1">
-          {activeTab === 'posts' && (
-            <div className="space-y-6">
-              {!posts || posts.length === 0 ? (
-                <EmptyState
-                  title="No posts yet"
-                  description="This user hasn't shared any posts yet."
-                />
-              ) : (
-                posts.map((post) => (
-                  <PostCard
-                    key={post.id}
-                    post={post}
-                    onLike={() => {}}
-                    onComment={() => {}}
-                    onShare={() => {}}
-                    onBookmark={() => {}}
-                  />
-                ))
-              )}
-            </div>
-          )}
-          
-          {activeTab === 'solutions' && (
-            <div className="space-y-6">
-              <EmptyState
-                title="No solutions yet"
-                description="This user hasn't shared any problem solutions yet."
-              />
-            </div>
-          )}
-          
-          {activeTab === 'achievements' && (
-            <div className="space-y-6">
-              {!achievements || achievements.length === 0 ? (
-                <EmptyState
-                  title="No achievements yet"
-                  description="This user hasn't earned any achievements yet."
-                />
-              ) : (
-                achievements.map((achievement) => (
-                  <div key={achievement.id} className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
-                    <div className="flex">
-                      <div className="bg-blue-100 dark:bg-blue-900 h-12 w-12 rounded-full flex items-center justify-center mr-4">
-                        {achievement.icon === 'trophy' && <Award className="h-6 w-6 text-blue-500" />}
-                        {achievement.icon === 'activity' && <Activity className="h-6 w-6 text-blue-500" />}
-                        {achievement.icon === 'star' && <Star className="h-6 w-6 text-blue-500" />}
-                      </div>
-                      <div className="flex-1">
-                        <div className="flex justify-between items-start">
-                          <div>
-                            <h3 className="font-semibold text-gray-900 dark:text-white">
-                              {achievement.title}
-                            </h3>
-                            <p className="text-gray-600 dark:text-gray-400">
-                              {achievement.description}
-                            </p>
-                          </div>
-                          <div className="bg-gray-100 dark:bg-gray-700 rounded-full px-3 py-1 text-sm">
-                            +{achievement.points} points
-                          </div>
-                        </div>
-                        <div className="mt-2 text-gray-500 dark:text-gray-400 text-sm">
-                          {achievement.date}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-          )}
-          
-          {activeTab === 'badges' && (
-            <UserBadges badges={badges || []} />
-          )}
-        </div>
-        
-        {/* Sidebar */}
-        <div className="md:w-80 space-y-6">
-          {/* Skills */}
-          <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
-            <h3 className="font-semibold text-gray-900 dark:text-white mb-4">Skills</h3>
-            <div className="flex flex-wrap gap-2">
-              {!skills || skills.length === 0 ? (
-                <p className="text-gray-500 dark:text-gray-400 text-sm">No skills added yet</p>
-              ) : (
-                skills.map((skill, index) => (
-                  <Badge
-                    key={index}
-                    text={skill}
-                    color={index % 3 === 0 ? 'blue' : index % 3 === 1 ? 'purple' : 'cyan'}
-                  />
-                ))
-              )}
-            </div>
-          </div>
-          
-          {/* Recent Activity */}
-          <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
-            <h3 className="font-semibold text-gray-900 dark:text-white mb-4">Recent Activity</h3>
-            <div className="space-y-4">
-              {!activity || activity.length === 0 ? (
-                <p className="text-gray-500 dark:text-gray-400 text-sm">No recent activity</p>
-              ) : (
-                activity.map((item, index) => (
-                  <div key={index} className="flex">
-                    <div className="mr-3 mt-0.5">
-                      <div className="h-2 w-2 rounded-full bg-blue-500"></div>
-                    </div>
-                    <div>
-                      <p className="text-sm text-gray-700 dark:text-gray-300">
-                        {item.type === 'post' ? (
-                          <>Created post <span className="text-blue-500">{item.title}</span></>
-                        ) : (
-                          <>Solved <span className="text-blue-500">{item.problem_title}</span> problem</>
-                        )}
-                      </p>
-                      <p className="text-gray-500 dark:text-gray-400 text-xs">
-                        {new Date(item.created_at).toLocaleDateString()}
-                      </p>
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
       
       {/* Profile Edit Modal */}
       {isCurrentUser && (
@@ -526,6 +739,7 @@ const Profile: React.FC = () => {
         type={followersModalType}
         userName={user.name}
       />
+      </div>
     </div>
   );
 };

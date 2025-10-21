@@ -3,3 +3,319 @@
 @import 'tailwindcss/components';
 @import 'tailwindcss/utilities';
 /* DO NOT DELETE THESE TAILWIND IMPORTS, OTHERWISE THE STYLING WILL NOT RENDER AT ALL */
+
+/* Z-Index Hierarchy - Standardized across the project */
+/* z-0 → main content */
+/* z-10 → cards, containers */
+/* z-20 → sidebar / mobile nav */
+/* z-30 → dropdowns */
+/* z-40 → modals / overlays */
+/* z-50 → toasts / notifications */
+/* z-[9999] → emergency top layer (like portal modals) */
+
+/* Custom animations for enhanced UX */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+@keyframes bounce {
+  0%, 20%, 53%, 80%, 100% {
+    transform: translate3d(0,0,0);
+  }
+  40%, 43% {
+    transform: translate3d(0, -8px, 0);
+  }
+  70% {
+    transform: translate3d(0, -4px, 0);
+  }
+  90% {
+    transform: translate3d(0, -2px, 0);
+  }
+}
+
+/* Smooth scrolling */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Enhanced focus states 
+*:focus {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}*/
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #1e293b;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #475569;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #64748b;
+}
+
+/* Glass morphism effect */
+.glass {
+  background: rgba(30, 41, 59, 0.4);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(148, 163, 184, 0.1);
+}
+
+/* Gradient text */
+.gradient-text {
+  background: linear-gradient(135deg, #FF6A00, #FF2D00);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Hover effects */
+.hover-lift {
+  transition: transform 0.2s ease-in-out;
+}
+
+.hover-lift:hover {
+  transform: translateY(-2px);
+}
+
+/* Loading shimmer effect */
+.shimmer {
+  background: linear-gradient(90deg, #1e293b 25%, #334155 50%, #1e293b 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+/* Force dark theme on root elements */
+html {
+  color-scheme: dark;
+  /* Ember Flow Night base */
+  background-color: #0E0E10; /* deep charcoal */
+}
+
+html.dark {
+  color-scheme: dark;
+}
+
+html.light {
+  color-scheme: light;
+}
+
+/* Global CSS for optimized scrolling and layout */
+* {
+  box-sizing: border-box;
+}
+
+html, body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  /* Removed overflow-x: hidden to prevent modal clipping */
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  /* Ensure dark theme background */
+  background-color: #0E0E10; /* night bg */
+  color: #F5F5F5; /* warm white */
+}
+
+/* Force dark theme on body */
+body.dark {
+  background-color: #0E0E10 !important;
+  color: #F5F5F5 !important;
+}
+
+#root {
+  height: 100%;
+  min-height: 100vh;
+  /* Ember Flow Night */
+  background-color: #0E0E10;
+  color: inherit;
+}
+
+/* Ember Flow content defaults (match Problems/Execution/Challenges) */
+.dark main,
+.dark .container,
+.dark .max-w-7xl,
+.dark .max-w-screen-xl {
+  color: #F5F5F5; /* primary text */
+}
+
+.dark .container p,
+.dark .container .subtext,
+.dark .max-w-7xl p,
+.dark .max-w-screen-xl p,
+.dark main p,
+.dark main .muted,
+.dark .text-body-secondary {
+  color: #A1A1AA; /* secondary text */
+}
+
+/* Headings default to primary when not explicitly colored */
+.dark h1, .dark h2, .dark h3, .dark h4, .dark h5, .dark h6 {
+  color: #F5F5F5;
+}
+
+/* Remove any unwanted borders and lines */
+* {
+  border-color: inherit;
+}
+
+/* Custom scrollbar styling for webkit browsers */  
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(156, 163, 175, 0.5);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(156, 163, 175, 0.7);
+}
+
+/* Dark mode scrollbar */
+.dark ::-webkit-scrollbar-thumb {
+  background: rgba(75, 85, 99, 0.5);
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: rgba(75, 85, 99, 0.7);
+}
+
+/* Ensure no unwanted bottom borders */
+main, .main-content {
+  border-bottom: none !important;
+}
+
+/* Fix main content area to fill properly */
+/* Let flex layout handle height; fixed calc can cause 1px gaps */
+main {
+  min-height: auto;
+}
+
+/* Ensure no gaps in the main layout */
+.flex.h-screen {
+  height: 100vh !important;
+}
+
+.flex.flex-col.flex-1 {
+  height: 100vh !important;
+}
+
+/* Remove any default margins/padding that might cause layout issues */
+h1, h2, h3, h4, h5, h6, p {
+  margin: 0;
+  padding: 0;
+}
+
+/* Smooth scrolling */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Ensure all components inherit dark theme */
+.dark * {
+  color-scheme: dark;
+}
+
+/* Fix for any white backgrounds that might appear */
+.dark .bg-white {
+  background-color: #18181B !important; /* card bg */
+}
+
+.dark .text-gray-900 {
+  color: #F5F5F5 !important;
+}
+
+.dark .text-gray-800 {
+  color: #f3f4f6 !important; /* gray-100 */
+}
+
+.dark .text-gray-700 {
+  color: #e5e7eb !important; /* gray-200 */
+}
+
+.dark .text-gray-600 {
+  color: #d1d5db !important; /* gray-300 */
+}
+
+.dark .text-gray-500 {
+  color: #9ca3af !important; /* gray-400 */
+}
+
+.dark .text-gray-400 {
+  color: #6b7280 !important; /* gray-500 */
+}
+
+.dark .text-gray-300 {
+  color: #4b5563 !important; /* gray-600 */
+}
+
+.dark .text-gray-200 {
+  color: #374151 !important; /* gray-700 */
+}
+
+.dark .text-gray-100 {
+  color: #1f2937 !important; /* gray-800 */
+}

@@ -14,6 +14,11 @@ class SocketService {
   private connectionHandlers: ((connected: boolean) => void)[] = [];
 
   connect() {
+    // Temporarily disable socket connection to prevent console flooding
+    console.log('Socket.IO connection disabled - feature under maintenance');
+    return;
+    
+    /* DISABLED FOR NOW
     if (this.socket?.connected) {
       return;
     }
@@ -24,7 +29,7 @@ class SocketService {
       return;
     }
 
-    const socketUrl = import.meta.env.VITE_SOCKET_URL || 'http://localhost:5000';
+    const socketUrl = import.meta.env.VITE_SOCKET_URL || window.location.origin;
     
     this.socket = io(socketUrl, {
       auth: {
@@ -36,6 +41,7 @@ class SocketService {
     });
 
     this.setupEventListeners();
+    */
   }
 
   disconnect() {

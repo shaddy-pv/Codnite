@@ -5,11 +5,13 @@ import { Button } from './ui/Button';
 import Badge from './ui/Badge';
 import { api } from '../services/api';
 import { useToast } from './ui/Toast';
+import { PortalModal } from './ui/PortalModal';
 
 interface PostCreateModalProps {
   isOpen: boolean;
   onClose: () => void;
   onPostCreated?: (post: any) => void;
+  collegeId?: string; // Add collegeId prop
 }
 
 interface PostData {
@@ -24,7 +26,8 @@ interface PostData {
 const PostCreateModal: React.FC<PostCreateModalProps> = ({
   isOpen,
   onClose,
-  onPostCreated
+  onPostCreated,
+  collegeId
 }) => {
   const [postData, setPostData] = useState<PostData>({
     title: '',
@@ -142,7 +145,8 @@ const PostCreateModal: React.FC<PostCreateModalProps> = ({
         tags: allTags,
         category: postData.category,
         language: postData.language,
-        isPublic: postData.isPublic
+        isPublic: postData.isPublic,
+        collegeId: collegeId // Add collegeId to the post
       });
 
       success('Post created successfully!');
@@ -178,24 +182,14 @@ const PostCreateModal: React.FC<PostCreateModalProps> = ({
     }
   };
 
-  if (!isOpen) return null;
-
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white dark:bg-gray-800 rounded-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-        <div className="p-6">
-          {/* Header */}
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-              Create New Post
-            </h2>
-            <button
-              onClick={onClose}
-              className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-            >
-              <X className="w-6 h-6 text-gray-500" />
-            </button>
-          </div>
+    <PortalModal
+      isOpen={isOpen}
+      onClose={onClose}
+      title="Create New Post"
+      size="xl"
+      className="max-h-[90vh]"
+    >
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Main Content */}
@@ -210,7 +204,7 @@ const PostCreateModal: React.FC<PostCreateModalProps> = ({
                   value={postData.title}
                   onChange={(e) => handleInputChange('title', e.target.value)}
                   placeholder="What's on your mind?"
-                  className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+                  className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
                   maxLength={200}
                 />
                 <div className="text-sm text-gray-500 mt-1">
@@ -266,7 +260,7 @@ const PostCreateModal: React.FC<PostCreateModalProps> = ({
                     onChange={(e) => setTagInput(e.target.value)}
                     onKeyPress={handleKeyPress}
                     placeholder="Add a tag..."
-                    className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+                    className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
                   />
                   <Button
                     variant="outline"
@@ -301,7 +295,7 @@ const PostCreateModal: React.FC<PostCreateModalProps> = ({
                         key={category.value}
                         className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${
                           postData.category === category.value
-                            ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
+                            ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20'
                             : 'border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'
                         }`}
                       >
@@ -329,7 +323,7 @@ const PostCreateModal: React.FC<PostCreateModalProps> = ({
                 <select
                   value={postData.language}
                   onChange={(e) => handleInputChange('language', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
                 >
                   <option value="">Select language</option>
                   {programmingLanguages.map((lang) => (
@@ -424,14 +418,12 @@ const PostCreateModal: React.FC<PostCreateModalProps> = ({
           <Button
               onClick={handleSubmit}
               disabled={isSubmitting || !postData.title.trim() || !postData.content.trim()}
-              className="bg-blue-600 hover:bg-blue-700"
+              className="bg-primary-600 hover:bg-primary-700"
             >
               {isSubmitting ? 'Creating...' : 'Create Post'}
           </Button>
         </div>
-        </div>
-      </div>
-    </div>
+    </PortalModal>
   );
 };
 

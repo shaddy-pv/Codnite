@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { ArrowRight, Mail, Linkedin, Search, CheckCircle, User, Lock } from 'lucide-react';
 import Button from '../components/ui/Button';
 import { Card } from '../components/ui/FormCard';
@@ -35,9 +35,45 @@ const Onboarding: React.FC<OnboardingProps> = ({
       email: validationRules.email,
       username: validationRules.username,
       name: validationRules.name,
-      password: validationRules.password
+      password: validationRules.password,
+      collegeId: { required: true }
     }
   );
+
+  // Custom step-aware validation
+  const isStepValid = useMemo(() => {
+    if (step === 1) {
+      // Step 1: Only validate email, username, name, password
+      const step1Fields = ['email', 'username', 'name', 'password'];
+      return step1Fields.every(fieldName => {
+        const field = fields[fieldName];
+        return field && field.isValid && field.value.trim() !== '';
+      });
+    } else if (step === 2) {
+      // Step 2: Validate college selection
+      return selectedCollege && selectedCollege.id;
+    } else if (step === 3) {
+      // Step 3: All fields must be valid including collegeId
+      return Object.values(fields).every(field => field.isValid && field.value.trim() !== '');
+    }
+    return false;
+  }, [step, fields, selectedCollege]);
+
+  // Debug logging
+  useEffect(() => {
+    console.log('Form state changed', { 
+      isValid, 
+      isStepValid,
+      step,
+      fields: Object.keys(fields).map(key => ({ 
+        key, 
+        value: fields[key].value, 
+        isValid: fields[key].isValid, 
+        errors: fields[key].errors 
+      })),
+      selectedCollege
+    });
+  }, [isValid, isStepValid, step, fields, selectedCollege]);
 
   // Load colleges from API
   const loadColleges = async (search?: string) => {
@@ -78,7 +114,7 @@ const Onboarding: React.FC<OnboardingProps> = ({
         username: formData.username,
         name: formData.name,
         password: formData.password,
-        collegeId: selectedCollege?.id || null
+        collegeId: formData.collegeId || selectedCollege?.id || null
       });
 
       localStorage.setItem('token', data.token);
@@ -92,11 +128,14 @@ const Onboarding: React.FC<OnboardingProps> = ({
   };
 
   const handleNextStep = () => {
+    console.log('handleNextStep called', { step, isValid, isLoading });
     if (step < 3) {
       if (step === 1) {
         // Validate step 1 fields before proceeding
         const step1Fields = ['email', 'username', 'name', 'password'];
         const hasErrors = step1Fields.some(field => getFieldError(field));
+        
+        console.log('Step 1 validation', { step1Fields, hasErrors, errors: step1Fields.map(f => ({ field: f, error: getFieldError(f) })) });
         
         if (hasErrors) {
           // Trigger validation for all fields
@@ -207,11 +246,34 @@ const Onboarding: React.FC<OnboardingProps> = ({
                 variant="primary" 
                 fullWidth 
                 rightIcon={<ArrowRight className="h-5 w-5" />} 
-                onClick={handleNextStep}
-                disabled={isLoading || !isValid}
+                onClick={(e) => {
+                  console.log('Button clicked!', { e, step, isStepValid, isLoading });
+                  handleNextStep();
+                }}
+                disabled={isLoading || !isStepValid}
+                style={{ pointerEvents: 'auto', zIndex: 1000 }}
               >
-                {isLoading ? 'Creating Account...' : 'Continue'}
+                {isLoading ? 'Creating Account...' : `Continue ${!isStepValid ? '(Invalid)' : '(Valid)'}`}
               </Button>
+              
+              {/* Debug button */}
+              <button 
+                onClick={() => {
+                  console.log('Debug button clicked!', { step, isValid, isStepValid, isLoading, fields, selectedCollege });
+                  alert(`Step: ${step}, Valid: ${isValid}, StepValid: ${isStepValid}, Loading: ${isLoading}`);
+                }}
+                style={{ 
+                  marginTop: '10px', 
+                  padding: '10px', 
+                  backgroundColor: 'red', 
+                  color: 'white', 
+                  border: 'none', 
+                  borderRadius: '5px',
+                  width: '100%'
+                }}
+              >
+                DEBUG: Click me to test
+              </button>
               
               <div className="mt-6 text-center">
                 <p className="text-dark-300 text-xs mb-2">
@@ -274,6 +336,7 @@ const Onboarding: React.FC<OnboardingProps> = ({
                           key={college.id} 
                           onClick={() => {
                             setSelectedCollege(college);
+                            updateField('collegeId', college.id);
                             setStep(3);
                           }} 
                           className="w-full flex items-center p-3 bg-dark-700 rounded-lg hover:bg-dark-500 transition-colors"
@@ -292,6 +355,9 @@ const Onboarding: React.FC<OnboardingProps> = ({
                             </span>
                             <div className="text-dark-400 text-xs">
                               {college.shortName} • {college.location}
+                              {college.city && college.state && (
+                                <span> • {college.city}, {college.state}</span>
+                              )}
                             </div>
                           </div>
                         </button>
@@ -309,20 +375,71 @@ const Onboarding: React.FC<OnboardingProps> = ({
               </Button>
             </>}
           {step === 3 && <>
-              <div className="flex justify-center mb-6">
-                <div className="h-16 w-16 rounded-full bg-primary-blue bg-opacity-20 flex items-center justify-center">
-                  <CheckCircle className="h-8 w-8 text-primary-blue" />
-                </div>
-              </div>
-              <h2 className="text-xl font-medium mb-2 text-center">
-                You're all set!
+              <h2 className="text-2xl font-bold text-white mb-6 text-center">
+                Confirm Your Details
               </h2>
-              <p className="text-dark-300 text-center mb-6">
-                Your account has been created successfully. Get ready to join
-                the coding community.
-              </p>
-              <Button variant="primary" fullWidth onClick={handleNextStep}>
-                Start exploring
+              
+              <div className="space-y-4 mb-6">
+                <div className="bg-dark-600 rounded-xl p-4">
+                  <h3 className="text-white font-medium mb-2">Personal Information</h3>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-dark-300">Name:</span>
+                      <span className="text-white">{fields.name.value}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-dark-300">Email:</span>
+                      <span className="text-white">{fields.email.value}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-dark-300">Username:</span>
+                      <span className="text-white">@{fields.username.value}</span>
+                    </div>
+                  </div>
+                </div>
+                
+                {selectedCollege && (
+                  <div className="bg-dark-600 rounded-xl p-4">
+                    <h3 className="text-white font-medium mb-2">Selected College</h3>
+                    <div className="flex items-center space-x-3">
+                      <img 
+                        src={selectedCollege.logoUrl || '/default-college-logo.svg'} 
+                        alt={selectedCollege.name} 
+                        className="h-10 w-10 object-contain" 
+                        onError={(e) => {
+                          e.currentTarget.src = '/default-college-logo.svg';
+                        }}
+                      />
+                      <div>
+                        <div className="text-white font-medium">{selectedCollege.name}</div>
+                        <div className="text-dark-300 text-sm">
+                          {selectedCollege.shortName} • {selectedCollege.location}
+                          {selectedCollege.city && selectedCollege.state && (
+                            <span> • {selectedCollege.city}, {selectedCollege.state}</span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+              
+              <Button 
+                variant="primary" 
+                fullWidth 
+                onClick={handleRegister}
+                disabled={isLoading}
+              >
+                {isLoading ? 'Creating Account...' : 'Create Account'}
+              </Button>
+              
+              <Button 
+                variant="outline" 
+                fullWidth 
+                onClick={() => setStep(2)}
+                className="mt-2"
+              >
+                Back to College Selection
               </Button>
             </>}
         </div>

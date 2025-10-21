@@ -263,7 +263,14 @@ export const useFormValidation = (
 
   // Update isValid whenever fields change
   useEffect(() => {
-    const allFieldsValid = Object.values(fields).every(field => field.isValid && field.value.trim() !== '');
+    const allFieldsValid = Object.values(fields).every(field => {
+      // If field is required, it must have a value and be valid
+      if (field.rules.required) {
+        return field.isValid && field.value.trim() !== '';
+      }
+      // If field is not required, it just needs to be valid (can be empty)
+      return field.isValid;
+    });
     setIsValid(allFieldsValid);
   }, [fields]);
 

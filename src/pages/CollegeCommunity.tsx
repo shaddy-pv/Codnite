@@ -136,9 +136,9 @@ const CollegeCommunity: React.FC = () => {
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-8">
+    <div className="space-y-8">
       {/* College Header */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-8 mb-8">
+      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-8">
         <div className="flex items-start space-x-6">
           {college.logoUrl && (
             <img
@@ -202,7 +202,7 @@ const CollegeCommunity: React.FC = () => {
             onClick={() => setActiveTab(tab.id)}
             className={`flex items-center space-x-2 px-4 py-2 rounded-lg font-medium transition-colors ${
               activeTab === tab.id
-                ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300'
+                ? 'bg-neutral-600 text-neutral-300'
                 : 'text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100'
             }`}
           >
@@ -474,6 +474,7 @@ const CollegeCommunity: React.FC = () => {
           setPosts(prev => [newPost, ...prev]);
           setShowCreateModal(false);
         }}
+        collegeId={collegeId} // Pass the collegeId
       />
     </div>
   );

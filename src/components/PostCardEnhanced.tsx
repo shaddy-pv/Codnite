@@ -8,6 +8,7 @@ import Loading from './ui/Loading';
 import { api, Post, bookmarkApi } from '../services/api';
 import { useToast } from './ui/Toast';
 import CommentSection from './CommentSection';
+import { usePerformanceMonitor } from '../hooks/usePerformance';
 
 interface PostCardProps {
   post: Post;
@@ -16,6 +17,7 @@ interface PostCardProps {
   onShare?: (postId: string) => void;
   onBookmark?: (postId: string) => void;
   onReport?: (postId: string) => void;
+  onCommentCountChange?: (postId: string, count: number) => void;
   showActions?: boolean;
   showComments?: boolean;
   className?: string;
@@ -28,6 +30,7 @@ const PostCard: React.FC<PostCardProps> = React.memo(({
   onShare,
   onBookmark,
   onReport,
+  onCommentCountChange,
   showActions = true,
   showComments = false,
   className = ''
@@ -63,7 +66,13 @@ const PostCard: React.FC<PostCardProps> = React.memo(({
   }, [post.content]);
 
   const tags = useMemo(() => {
-    return post.tags?.split(',').slice(0, 5) || [];
+    if (Array.isArray(post.tags)) {
+      return post.tags.slice(0, 5);
+    }
+    if (typeof post.tags === 'string') {
+      return post.tags.split(',').slice(0, 5);
+    }
+    return [];
   }, [post.tags]);
 
   // Optimize callback functions
@@ -196,7 +205,7 @@ const PostCard: React.FC<PostCardProps> = React.memo(({
           </Button>
           
           {showMoreOptions && (
-            <div className="absolute right-0 top-8 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700 rounded-lg shadow-lg py-2 z-10 min-w-[160px]">
+            <div className="absolute right-0 top-8 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700 rounded-lg shadow-lg py-2 z-30 min-w-[160px]">
               <button
                 onClick={handleCopyLink}
                 className="flex items-center space-x-2 w-full px-3 py-2 text-sm text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800"
@@ -310,8 +319,7 @@ const PostCard: React.FC<PostCardProps> = React.memo(({
           <CommentSection
             postId={post.id}
             onCommentCountChange={(count) => {
-              // Update comment count in parent if needed
-              console.log('Comment count updated:', count);
+              onCommentCountChange?.(post.id, count);
             }}
           />
         </div>

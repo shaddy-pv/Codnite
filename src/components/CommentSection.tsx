@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, memo } from 'react';
 import { MessageSquare, Send, MoreHorizontal, Edit, Trash2, Reply, ChevronDown, ChevronRight } from 'lucide-react';
 import Avatar from './ui/Avatar';
 import { Button } from './ui/Button';
@@ -25,7 +25,7 @@ interface CommentSectionProps {
   onCommentCountChange?: (count: number) => void;
 }
 
-const CommentSection: React.FC<CommentSectionProps> = ({
+const CommentSectionComponent: React.FC<CommentSectionProps> = ({
   postId,
   initialComments = [],
   onCommentCountChange
@@ -55,7 +55,7 @@ const CommentSection: React.FC<CommentSectionProps> = ({
     try {
       setIsLoading(true);
       const response = await commentsApi.getByPost(postId);
-      setComments(response.data.comments || []);
+      setComments(response.data || []);
     } catch (err: any) {
       error('Failed to load comments', err.message);
     } finally {
@@ -398,5 +398,12 @@ const CommentSection: React.FC<CommentSectionProps> = ({
     </div>
   );
 };
+
+const areEqual = (prev: CommentSectionProps, next: CommentSectionProps) => (
+  prev.postId === next.postId &&
+  (prev.initialComments?.length || 0) === (next.initialComments?.length || 0)
+);
+
+const CommentSection = memo(CommentSectionComponent, areEqual);
 
 export default CommentSection;
