@@ -314,7 +314,7 @@ const CodeExecutionTest: React.FC = () => {
                             <div className="flex items-center justify-between mb-2">
                               <div className="flex items-center space-x-2">
                                 {result.isSubmission ? (
-                                  <Play className="h-4 w-4 text-blue-500" />
+                                  <Play className="h-4 w-4 text-orange-500" />
                                 ) : (
                                   <Play className="h-4 w-4 text-green-500" />
                                 )}

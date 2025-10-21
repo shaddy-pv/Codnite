@@ -175,7 +175,7 @@ const ChallengeDetails: React.FC = () => {
                   <select
                     value={language}
                     onChange={(e) => setLanguage(e.target.value)}
-                    className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
                   >
                     <option value="javascript">JavaScript</option>
                     <option value="python">Python</option>
@@ -198,7 +198,7 @@ const ChallengeDetails: React.FC = () => {
                 value={code}
                 onChange={(e) => setCode(e.target.value)}
                 placeholder="Write your solution here..."
-                className="w-full h-64 p-4 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 font-mono text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
+                className="w-full h-64 p-4 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 font-mono text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500 resize-none"
               />
             </div>
           )}
@@ -267,7 +267,7 @@ const ChallengeDetails: React.FC = () => {
             
             <div className="space-y-4">
               <div className="flex items-center">
-                <Calendar className="h-5 w-5 text-blue-500 mr-3" />
+                <Calendar className="h-5 w-5 text-orange-500 mr-3" />
                 <div>
                   <div className="text-sm text-gray-500 dark:text-gray-400">Starts</div>
                   <div className="font-medium">{formatDate(challenge.startDate)}</div>
@@ -275,7 +275,7 @@ const ChallengeDetails: React.FC = () => {
               </div>
               
               <div className="flex items-center">
-                <Clock className="h-5 w-5 text-blue-500 mr-3" />
+                <Clock className="h-5 w-5 text-orange-500 mr-3" />
                 <div>
                   <div className="text-sm text-gray-500 dark:text-gray-400">Ends</div>
                   <div className="font-medium">{formatDate(challenge.endDate)}</div>
@@ -283,7 +283,7 @@ const ChallengeDetails: React.FC = () => {
               </div>
               
               <div className="flex items-center">
-                <Trophy className="h-5 w-5 text-blue-500 mr-3" />
+                <Trophy className="h-5 w-5 text-orange-500 mr-3" />
                 <div>
                   <div className="text-sm text-gray-500 dark:text-gray-400">Points</div>
                   <div className="font-medium">{challenge.points}</div>
@@ -291,7 +291,7 @@ const ChallengeDetails: React.FC = () => {
               </div>
               
               <div className="flex items-center">
-                <Users className="h-5 w-5 text-blue-500 mr-3" />
+                <Users className="h-5 w-5 text-orange-500 mr-3" />
                 <div>
                   <div className="text-sm text-gray-500 dark:text-gray-400">Participants</div>
                   <div className="font-medium">{challenge._count?.submissions || 0}</div>

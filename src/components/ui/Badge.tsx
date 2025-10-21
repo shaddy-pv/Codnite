@@ -2,7 +2,7 @@ import React from 'react';
 interface BadgeProps {
   text?: string;
   children?: React.ReactNode;
-  color?: 'blue' | 'purple' | 'cyan' | 'gray';
+  color?: 'orange' | 'blue' | 'purple' | 'cyan' | 'gray';
   variant?: 'primary' | 'secondary' | 'outline' | 'success' | 'warning' | 'error';
   size?: 'sm' | 'md';
   className?: string;
@@ -10,16 +10,17 @@ interface BadgeProps {
 const Badge: React.FC<BadgeProps> = ({
   text,
   children,
-  color = 'blue',
+  color = 'orange',
   variant,
   size = 'sm',
   className = ''
 }) => {
   const colorClasses = {
-    blue: 'bg-neutral-600 bg-opacity-20 text-neutral-300',
-    purple: 'bg-neutral-600 bg-opacity-20 text-neutral-300',
-    cyan: 'bg-neutral-600 bg-opacity-20 text-neutral-300',
-    gray: 'bg-dark-400 bg-opacity-20 text-dark-300'
+    orange: 'bg-orange-500 bg-opacity-20 text-orange-300 border border-orange-500/30',
+    blue: 'bg-orange-500 bg-opacity-20 text-orange-300 border border-orange-500/30',
+    purple: 'bg-orange-500 bg-opacity-20 text-orange-300 border border-orange-500/30',
+    cyan: 'bg-orange-500 bg-opacity-20 text-orange-300 border border-orange-500/30',
+    gray: 'bg-slate-600 bg-opacity-20 text-slate-300 border border-slate-500/30'
   };
 
   const variantClasses = {

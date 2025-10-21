@@ -224,7 +224,7 @@ const CollegeCommunity: React.FC = () => {
                 </h2>
                 <Button
                   onClick={() => setShowCreateModal(true)}
-                  className="bg-blue-600 hover:bg-blue-700 text-white"
+                  className="bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white border-0"
                 >
                   Create Post
                 </Button>

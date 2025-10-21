@@ -1,11 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import { MessageSquare, Share2, Award, Code, Activity, Bookmark, MapPin, Briefcase, Calendar, ExternalLink, Linkedin, Globe, TrendingUp, Users, Star, Edit3, ThumbsUp, Camera } from 'lucide-react';
+import { MessageSquare, Share2, Award, Code, Activity, Bookmark, Calendar, Linkedin, Star, Edit3, Camera } from 'lucide-react';
 import Avatar from '../components/ui/Avatar';
 import { Button } from '../components/ui/Button';
 import Badge from '../components/ui/Badge';
-import Card from '../components/ui/Card';
-import Loading, { PostSkeleton } from '../components/ui/Loading';
+import Loading from '../components/ui/Loading';
 import { EmptyState } from '../components/ui/EmptyState';
 import ProfileEditModal from '../components/ProfileEditModal';
 import UserStats from '../components/UserStats';
@@ -242,17 +241,17 @@ const Profile: React.FC = () => {
     });
   };
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+    <div className="min-h-screen bg-ember-bg-primary">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Profile Header */}
-        <div className="bg-slate-800/50 backdrop-blur-sm rounded-2xl border border-slate-700/50 overflow-hidden mb-8 shadow-lg">
+        <div className="bg-ember-bg-secondary backdrop-blur-sm rounded-2xl border border-ember-border overflow-hidden mb-8 shadow-strong">
           {/* Cover Image */}
           <div 
             className="h-48 relative"
             style={{
               backgroundImage: user.coverPhotoUrl 
                 ? `url(${user.coverPhotoUrl})` 
-                : 'linear-gradient(to right, rgb(59 130 246), rgb(147 51 234))',
+                : 'linear-gradient(to right, #FF6A00, #FF2D00)',
               backgroundSize: 'cover',
               backgroundPosition: 'center',
               backgroundRepeat: 'no-repeat'
@@ -298,7 +297,7 @@ const Profile: React.FC = () => {
                     };
                     input.click();
                   }}
-                  className="bg-slate-800/50 backdrop-blur-sm hover:bg-slate-700/50 rounded-full p-2 transition-all duration-200 group"
+                  className="bg-ember-bg-secondary/50 backdrop-blur-sm hover:bg-ember-bg-tertiary/50 rounded-full p-2 transition-all duration-300 group"
                   title="Change cover photo"
                 >
                   <Edit3 className="h-4 w-4 text-white group-hover:text-primary-300" />
@@ -307,7 +306,7 @@ const Profile: React.FC = () => {
             )}
             
             <div className="absolute bottom-4 right-4">
-              <div className="bg-slate-800/50 backdrop-blur-sm rounded-lg px-3 py-1">
+              <div className="bg-ember-bg-secondary/50 backdrop-blur-sm rounded-lg px-3 py-1 border border-ember-border">
                 <span className="text-white text-sm font-medium">Member since {formatDate(user.createdAt)}</span>
               </div>
             </div>
@@ -315,7 +314,7 @@ const Profile: React.FC = () => {
           
           {/* Profile Info */}
           <div className="p-8 relative">
-            <div className="absolute -top-20 left-8 bg-slate-800 rounded-2xl p-3 border-4 border-slate-800 shadow-xl">
+            <div className="absolute -top-20 left-8 bg-ember-bg-secondary rounded-2xl p-3 border-4 border-ember-bg-secondary shadow-glow">
               <Avatar 
                 src={user.avatarUrl} 
                 alt={user.name}
@@ -342,7 +341,7 @@ const Profile: React.FC = () => {
                         avatarElement.click();
                       }
                     }}
-                    className="bg-primary-600 hover:bg-primary-700 text-white rounded-full p-2 shadow-lg transition-colors duration-200"
+                    className="bg-gradient-to-r from-primary-600 to-secondary-600 hover:from-primary-500 hover:to-secondary-500 text-white rounded-full p-2 shadow-glow transition-all duration-300"
                     title="Change Avatar"
                   >
                     <Camera className="w-4 h-4" />
@@ -354,7 +353,7 @@ const Profile: React.FC = () => {
             <div className="ml-40 flex flex-col md:flex-row md:items-center justify-between">
               <div>
                 <div className="flex items-center mb-2">
-                  <h1 className="text-3xl font-bold text-white mr-4">
+                  <h1 className="text-3xl font-bold text-ember-text-primary mr-4">
                     {user.name}
                   </h1>
                   {badges && badges.length > 0 && (
@@ -363,16 +362,17 @@ const Profile: React.FC = () => {
                         <Badge 
                           key={index}
                           text={badge.name || badge} 
-                          color={index === 0 ? 'primary' : 'secondary'} 
-                          size="md" 
+                          color={index === 0 ? 'orange' : 'blue'} 
+                          size="md"
+                          className="bg-gradient-to-r from-primary-600/20 to-secondary-600/20 border-primary-600/30 text-primary-300"
                         />
                       ))}
                     </div>
                   )}
                 </div>
-                <p className="text-slate-400 text-lg">@{user.username}</p>
+                <p className="text-ember-text-secondary text-lg">@{user.username}</p>
                 {user.bio && (
-                  <p className="mt-3 text-slate-300 leading-relaxed max-w-2xl">
+                  <p className="mt-3 text-ember-text-primary leading-relaxed max-w-2xl">
                     {user.bio}
                   </p>
                 )}
@@ -384,7 +384,7 @@ const Profile: React.FC = () => {
                     variant="outline"
                     leftIcon={<Edit3 className="h-4 w-4" />}
                     onClick={() => setIsEditing(true)}
-                    className="border-slate-600 text-slate-300 hover:bg-slate-700 hover:text-white"
+                    className="border-ember-border text-ember-text-primary hover:bg-ember-bg-hover hover:text-primary-300 hover:border-primary-600/50"
                   >
                     Edit Profile
                   </Button>
@@ -407,7 +407,7 @@ const Profile: React.FC = () => {
                 <Button 
                   variant="ghost" 
                   leftIcon={<Share2 className="h-4 w-4" />}
-                  className="text-slate-400 hover:text-white hover:bg-slate-700/50"
+                  className="text-ember-text-secondary hover:text-ember-text-primary hover:bg-ember-bg-hover"
                 >
                   Share
                 </Button>
@@ -415,16 +415,16 @@ const Profile: React.FC = () => {
             </div>
             
             {/* Links and Info */}
-            <div className="mt-8 pt-6 border-t border-slate-700/50">
+            <div className="mt-8 pt-6 border-t border-ember-border">
               <div className="flex flex-wrap gap-6">
                 {user.collegeId && (
-                  <div className="flex items-center text-slate-400">
+                  <div className="flex items-center text-ember-text-secondary">
                     <Award className="h-5 w-5 mr-2" />
                     <span className="font-medium">{user.collegeId}</span>
                   </div>
                 )}
                 {user.githubUsername && (
-                  <div className="flex items-center text-slate-400">
+                  <div className="flex items-center text-ember-text-secondary">
                     <Code className="h-5 w-5 mr-2" />
                     <a 
                       href={`https://github.com/${user.githubUsername}`} 
@@ -437,7 +437,7 @@ const Profile: React.FC = () => {
                   </div>
                 )}
                 {user.linkedinUrl && (
-                  <div className="flex items-center text-slate-400">
+                  <div className="flex items-center text-ember-text-secondary">
                     <Linkedin className="h-5 w-5 mr-2" />
                     <a 
                       href={user.linkedinUrl} 
@@ -449,7 +449,7 @@ const Profile: React.FC = () => {
                     </a>
                   </div>
                 )}
-                <div className="flex items-center text-slate-400">
+                <div className="flex items-center text-ember-text-secondary">
                   <Calendar className="h-5 w-5 mr-2" />
                   <span className="font-medium">Joined {formatDate(user.createdAt)}</span>
                 </div>
@@ -457,7 +457,7 @@ const Profile: React.FC = () => {
             </div>
             
             {/* Stats */}
-            <div className="mt-8 pt-6 border-t border-slate-700/50">
+            <div className="mt-8 pt-6 border-t border-ember-border">
               <UserStats 
                 user={user} 
                 stats={stats} 
@@ -474,57 +474,72 @@ const Profile: React.FC = () => {
           </div>
           
           {/* Enhanced Tabs */}
-          <div className="flex border-t border-slate-700/50 overflow-x-auto">
+          <div className="flex border-t border-ember-border overflow-x-auto">
             <button
               onClick={() => setActiveTab('posts')}
-              className={`py-4 px-6 transition-all duration-200 font-medium ${
+              className={`py-4 px-6 transition-all duration-300 font-medium relative ${
                 activeTab === 'posts'
-                  ? 'border-b-2 border-primary-600 text-primary-400'
-                  : 'text-slate-400 hover:text-white'
+                  ? 'border-b-2 border-primary-600 text-primary-400 bg-gradient-to-t from-primary-600/10 to-transparent'
+                  : 'text-ember-text-secondary hover:text-ember-text-primary'
               }`}
             >
+              {activeTab === 'posts' && (
+                <div className="absolute inset-x-0 bottom-0 h-0.5 bg-gradient-to-r from-primary-600 to-secondary-600 shadow-glow"></div>
+              )}
               Posts
             </button>
             {isCurrentUser && (
               <button
                 onClick={() => setActiveTab('saved')}
-                className={`py-4 px-6 transition-all duration-200 font-medium ${
+                className={`py-4 px-6 transition-all duration-300 font-medium relative ${
                   activeTab === 'saved'
-                    ? 'border-b-2 border-primary-600 text-primary-400'
-                    : 'text-slate-400 hover:text-white'
+                    ? 'border-b-2 border-primary-600 text-primary-400 bg-gradient-to-t from-primary-600/10 to-transparent'
+                    : 'text-ember-text-secondary hover:text-ember-text-primary'
                 }`}
               >
+                {activeTab === 'saved' && (
+                  <div className="absolute inset-x-0 bottom-0 h-0.5 bg-gradient-to-r from-primary-600 to-secondary-600 shadow-glow"></div>
+                )}
                 Saved
               </button>
             )}
             <button
               onClick={() => setActiveTab('solutions')}
-              className={`py-4 px-6 transition-all duration-200 font-medium ${
+              className={`py-4 px-6 transition-all duration-300 font-medium relative ${
                 activeTab === 'solutions'
-                  ? 'border-b-2 border-primary-600 text-primary-400'
-                  : 'text-slate-400 hover:text-white'
+                  ? 'border-b-2 border-primary-600 text-primary-400 bg-gradient-to-t from-primary-600/10 to-transparent'
+                  : 'text-ember-text-secondary hover:text-ember-text-primary'
               }`}
             >
+              {activeTab === 'solutions' && (
+                <div className="absolute inset-x-0 bottom-0 h-0.5 bg-gradient-to-r from-primary-600 to-secondary-600 shadow-glow"></div>
+              )}
               Solutions
             </button>
             <button
               onClick={() => setActiveTab('achievements')}
-              className={`py-4 px-6 transition-all duration-200 font-medium ${
+              className={`py-4 px-6 transition-all duration-300 font-medium relative ${
                 activeTab === 'achievements'
-                  ? 'border-b-2 border-primary-600 text-primary-400'
-                  : 'text-slate-400 hover:text-white'
+                  ? 'border-b-2 border-primary-600 text-primary-400 bg-gradient-to-t from-primary-600/10 to-transparent'
+                  : 'text-ember-text-secondary hover:text-ember-text-primary'
               }`}
             >
+              {activeTab === 'achievements' && (
+                <div className="absolute inset-x-0 bottom-0 h-0.5 bg-gradient-to-r from-primary-600 to-secondary-600 shadow-glow"></div>
+              )}
               Achievements
             </button>
             <button
               onClick={() => setActiveTab('badges')}
-              className={`py-4 px-6 transition-all duration-200 font-medium ${
+              className={`py-4 px-6 transition-all duration-300 font-medium relative ${
                 activeTab === 'badges'
-                  ? 'border-b-2 border-primary-600 text-primary-400'
-                  : 'text-slate-400 hover:text-white'
+                  ? 'border-b-2 border-primary-600 text-primary-400 bg-gradient-to-t from-primary-600/10 to-transparent'
+                  : 'text-ember-text-secondary hover:text-ember-text-primary'
               }`}
             >
+              {activeTab === 'badges' && (
+                <div className="absolute inset-x-0 bottom-0 h-0.5 bg-gradient-to-r from-primary-600 to-secondary-600 shadow-glow"></div>
+              )}
               Badges
             </button>
           </div>
@@ -537,18 +552,18 @@ const Profile: React.FC = () => {
             {activeTab === 'posts' && (
               <div className="space-y-6">
                 {!posts || posts.length === 0 ? (
-                  <div className="bg-slate-800/50 backdrop-blur-sm rounded-2xl border border-slate-700/50 p-12 text-center">
-                    <div className="w-16 h-16 bg-slate-700/50 rounded-full flex items-center justify-center mx-auto mb-4">
-                      <MessageSquare className="h-8 w-8 text-slate-400" />
+                  <div className="bg-ember-bg-secondary backdrop-blur-sm rounded-2xl border border-ember-border p-12 text-center">
+                    <div className="w-16 h-16 bg-ember-bg-tertiary rounded-full flex items-center justify-center mx-auto mb-4">
+                      <MessageSquare className="h-8 w-8 text-ember-text-muted" />
                     </div>
-                    <h3 className="text-xl font-semibold text-white mb-2">No posts yet</h3>
-                    <p className="text-slate-400">This user hasn't shared any posts yet.</p>
+                    <h3 className="text-xl font-semibold text-ember-text-primary mb-2">No posts yet</h3>
+                    <p className="text-ember-text-secondary">This user hasn't shared any posts yet.</p>
                   </div>
                 ) : (
                   posts.map((post, index) => (
                     <div
                       key={post.id}
-                      className="transform transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl hover:shadow-slate-900/50"
+                      className="transform transition-all duration-300 hover:scale-[1.01] hover:shadow-strong"
                       style={{
                         animationDelay: `${index * 100}ms`,
                         animation: 'fadeInUp 0.6s ease-out forwards'
@@ -570,18 +585,18 @@ const Profile: React.FC = () => {
             {activeTab === 'saved' && (
               <div className="space-y-6">
                 {!savedPosts || savedPosts.length === 0 ? (
-                  <div className="bg-slate-800/50 backdrop-blur-sm rounded-2xl border border-slate-700/50 p-12 text-center">
-                    <div className="w-16 h-16 bg-slate-700/50 rounded-full flex items-center justify-center mx-auto mb-4">
-                      <Bookmark className="h-8 w-8 text-slate-400" />
+                  <div className="bg-ember-bg-secondary backdrop-blur-sm rounded-2xl border border-ember-border p-12 text-center">
+                    <div className="w-16 h-16 bg-ember-bg-tertiary rounded-full flex items-center justify-center mx-auto mb-4">
+                      <Bookmark className="h-8 w-8 text-ember-text-muted" />
                     </div>
-                    <h3 className="text-xl font-semibold text-white mb-2">No saved posts yet</h3>
-                    <p className="text-slate-400">You haven't saved any posts yet. Start exploring and save posts you like!</p>
+                    <h3 className="text-xl font-semibold text-ember-text-primary mb-2">No saved posts yet</h3>
+                    <p className="text-ember-text-secondary">You haven't saved any posts yet. Start exploring and save posts you like!</p>
                   </div>
                 ) : (
                   savedPosts.map((post, index) => (
                     <div
                       key={post.id}
-                      className="transform transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl hover:shadow-slate-900/50"
+                      className="transform transition-all duration-300 hover:scale-[1.01] hover:shadow-strong"
                       style={{
                         animationDelay: `${index * 100}ms`,
                         animation: 'fadeInUp 0.6s ease-out forwards'
@@ -601,28 +616,28 @@ const Profile: React.FC = () => {
             )}
             
             {activeTab === 'solutions' && (
-              <div className="bg-slate-800/50 backdrop-blur-sm rounded-2xl border border-slate-700/50 p-12 text-center">
-                <div className="w-16 h-16 bg-slate-700/50 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <Code className="h-8 w-8 text-slate-400" />
+              <div className="bg-ember-bg-secondary backdrop-blur-sm rounded-2xl border border-ember-border p-12 text-center">
+                <div className="w-16 h-16 bg-ember-bg-tertiary rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Code className="h-8 w-8 text-ember-text-muted" />
                 </div>
-                <h3 className="text-xl font-semibold text-white mb-2">No solutions yet</h3>
-                <p className="text-slate-400">This user hasn't shared any problem solutions yet.</p>
+                <h3 className="text-xl font-semibold text-ember-text-primary mb-2">No solutions yet</h3>
+                <p className="text-ember-text-secondary">This user hasn't shared any problem solutions yet.</p>
               </div>
             )}
             
             {activeTab === 'achievements' && (
               <div className="space-y-6">
                 {!achievements || achievements.length === 0 ? (
-                  <div className="bg-slate-800/50 backdrop-blur-sm rounded-2xl border border-slate-700/50 p-12 text-center">
-                    <div className="w-16 h-16 bg-slate-700/50 rounded-full flex items-center justify-center mx-auto mb-4">
-                      <Award className="h-8 w-8 text-slate-400" />
+                  <div className="bg-ember-bg-secondary backdrop-blur-sm rounded-2xl border border-ember-border p-12 text-center">
+                    <div className="w-16 h-16 bg-ember-bg-tertiary rounded-full flex items-center justify-center mx-auto mb-4">
+                      <Award className="h-8 w-8 text-ember-text-muted" />
                     </div>
-                    <h3 className="text-xl font-semibold text-white mb-2">No achievements yet</h3>
-                    <p className="text-slate-400">This user hasn't earned any achievements yet.</p>
+                    <h3 className="text-xl font-semibold text-ember-text-primary mb-2">No achievements yet</h3>
+                    <p className="text-ember-text-secondary">This user hasn't earned any achievements yet.</p>
                   </div>
                 ) : (
                   achievements.map((achievement) => (
-                    <div key={achievement.id} className="bg-slate-800/50 backdrop-blur-sm rounded-2xl border border-slate-700/50 p-6 hover:bg-slate-800/70 transition-all duration-300">
+                    <div key={achievement.id} className="bg-ember-bg-secondary backdrop-blur-sm rounded-2xl border border-ember-border p-6 hover:bg-ember-bg-tertiary hover:shadow-glow transition-all duration-300">
                       <div className="flex">
                     <div className="bg-gradient-to-r from-primary-600/20 to-secondary-600/20 h-12 w-12 rounded-xl flex items-center justify-center mr-4">
                           {achievement.icon === 'trophy' && <Award className="h-6 w-6 text-primary-400" />}
@@ -632,18 +647,18 @@ const Profile: React.FC = () => {
                         <div className="flex-1">
                           <div className="flex justify-between items-start">
                             <div>
-                              <h3 className="font-semibold text-white text-lg">
+                              <h3 className="font-semibold text-ember-text-primary text-lg">
                                 {achievement.title}
                               </h3>
-                              <p className="text-slate-400">
+                              <p className="text-ember-text-secondary">
                                 {achievement.description}
                               </p>
                             </div>
-                            <div className="bg-gradient-to-r from-green-500/20 to-emerald-500/20 border border-green-500/30 rounded-full px-3 py-1 text-sm">
-                              <span className="text-green-400 font-medium">+{achievement.points} points</span>
+                            <div className="bg-gradient-to-r from-success-500/20 to-success-400/20 border border-success-500/30 rounded-full px-3 py-1 text-sm">
+                              <span className="text-success-400 font-medium">+{achievement.points} points</span>
                             </div>
                           </div>
-                          <div className="mt-2 text-slate-500 text-sm">
+                          <div className="mt-2 text-ember-text-muted text-sm">
                             {achievement.date}
                           </div>
                         </div>
@@ -662,22 +677,23 @@ const Profile: React.FC = () => {
           {/* Sidebar */}
           <div className="lg:w-80 space-y-6">
             {/* Skills */}
-            <div className="bg-slate-800/50 backdrop-blur-sm rounded-2xl border border-slate-700/50 p-6 hover:bg-slate-800/70 transition-all duration-300">
+            <div className="bg-ember-bg-secondary backdrop-blur-sm rounded-2xl border border-ember-border p-6 hover:bg-ember-bg-tertiary hover:shadow-glow transition-all duration-300">
               <div className="flex items-center mb-6">
-                <div className="w-10 h-10 bg-gradient-to-r from-primary-600 to-secondary-600 rounded-lg flex items-center justify-center mr-3">
-                  <Code className="h-5 w-5 text-white" />
+                <div className="w-12 h-12 bg-gradient-to-r from-primary-600 to-secondary-600 rounded-xl flex items-center justify-center mr-4 shadow-glow">
+                  <Code className="h-6 w-6 text-white" />
                 </div>
-                <h3 className="font-semibold text-white text-lg">Skills</h3>
+                <h3 className="font-semibold text-ember-text-primary text-xl">Skills</h3>
               </div>
               <div className="flex flex-wrap gap-2">
                 {!skills || skills.length === 0 ? (
-                  <p className="text-slate-400 text-sm">No skills added yet</p>
+                  <p className="text-ember-text-secondary text-sm">No skills added yet</p>
                 ) : (
                   skills.map((skill, index) => (
                     <Badge
                       key={index}
                       text={skill}
-                      color={index % 3 === 0 ? 'primary' : index % 3 === 1 ? 'secondary' : 'primary'}
+                      color={index % 3 === 0 ? 'orange' : index % 3 === 1 ? 'blue' : 'purple'}
+                      className="bg-gradient-to-r from-primary-600/20 to-secondary-600/20 border-primary-600/30 text-primary-300"
                     />
                   ))
                 )}
@@ -685,31 +701,31 @@ const Profile: React.FC = () => {
             </div>
             
             {/* Recent Activity */}
-            <div className="bg-slate-800/50 backdrop-blur-sm rounded-2xl border border-slate-700/50 p-6 hover:bg-slate-800/70 transition-all duration-300">
+            <div className="bg-ember-bg-secondary backdrop-blur-sm rounded-2xl border border-ember-border p-6 hover:bg-ember-bg-tertiary hover:shadow-glow transition-all duration-300">
               <div className="flex items-center mb-6">
-                <div className="w-10 h-10 bg-gradient-to-r from-green-500 to-emerald-500 rounded-lg flex items-center justify-center mr-3">
-                  <Activity className="h-5 w-5 text-white" />
+                <div className="w-12 h-12 bg-gradient-to-r from-success-600 to-success-500 rounded-xl flex items-center justify-center mr-4 shadow-soft">
+                  <Activity className="h-6 w-6 text-white" />
                 </div>
-                <h3 className="font-semibold text-white text-lg">Recent Activity</h3>
+                <h3 className="font-semibold text-ember-text-primary text-xl">Recent Activity</h3>
               </div>
               <div className="space-y-4">
                 {!activity || activity.length === 0 ? (
-                  <p className="text-slate-400 text-sm">No recent activity</p>
+                  <p className="text-ember-text-secondary text-sm">No recent activity</p>
                 ) : (
                   activity.map((item, index) => (
-                    <div key={index} className="flex p-3 rounded-lg hover:bg-slate-700/50 transition-all duration-200">
+                    <div key={index} className="flex p-3 rounded-xl hover:bg-ember-bg-hover transition-all duration-300">
                       <div className="mr-3 mt-1">
                         <div className="h-2 w-2 rounded-full bg-primary-400"></div>
                       </div>
                       <div>
-                        <p className="text-sm text-slate-300">
+                        <p className="text-sm text-ember-text-primary">
                           {item.type === 'post' ? (
                             <>Created post <span className="text-primary-400 font-medium">{item.title}</span></>
                           ) : (
                             <>Solved <span className="text-primary-400 font-medium">{item.problem_title}</span> problem</>
                           )}
                         </p>
-                        <p className="text-slate-500 text-xs mt-1">
+                        <p className="text-ember-text-muted text-xs mt-1">
                           {new Date(item.created_at).toLocaleDateString()}
                         </p>
                       </div>

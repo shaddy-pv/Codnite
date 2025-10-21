@@ -51,6 +51,40 @@ export function App() {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
+  // Admin dashboard keyboard shortcut
+  useEffect(() => {
+    const handleKeyPress = (e: KeyboardEvent) => {
+      // Ctrl + Shift + A to open admin dashboard
+      if (e.ctrlKey && e.shiftKey && e.key === 'A' && user?.role === 'admin') {
+        setShowAdminDashboard(true);
+        e.preventDefault();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyPress);
+    return () => window.removeEventListener('keydown', handleKeyPress);
+  }, [user]);
+
+  // URL parameter for admin access
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('admin') === 'true' && user?.role === 'admin') {
+      setShowAdminDashboard(true);
+    }
+  }, [user]);
+
+  // Listen for admin dashboard open event from navbar
+  useEffect(() => {
+    const handleOpenAdminDashboard = () => {
+      if (user?.role === 'admin') {
+        setShowAdminDashboard(true);
+      }
+    };
+
+    window.addEventListener('openAdminDashboard', handleOpenAdminDashboard);
+    return () => window.removeEventListener('openAdminDashboard', handleOpenAdminDashboard);
+  }, [user]);
+
   // Authentication is now handled by useAuthState hook
   // This hook persists state across HMR reloads
 

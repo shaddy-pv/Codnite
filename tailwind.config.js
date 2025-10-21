@@ -15,7 +15,7 @@ export default {
           300: '#FFA16D',
           400: '#FF8640',
           500: '#FF6F26',
-          600: '#FF6A00', // Accent start
+          600: '#FF6A00', // Vivid ember orange
           700: '#E15600',
           800: '#BF4600',
           900: '#993800',
@@ -29,11 +29,24 @@ export default {
           300: '#FF8B7C',
           400: '#FF6B5B',
           500: '#FF4B3B',
-          600: '#FF2D00', // Accent end
+          600: '#FF2D00', // Vivid ember red
           700: '#D62100',
           800: '#A91A00',
           900: '#7A1400',
           950: '#2B0500',
+        },
+        // Ember Flow Night Mode Colors
+        ember: {
+          'bg-primary': '#0E0E10',    // Deep charcoal
+          'bg-secondary': '#18181B',   // Panel background
+          'bg-tertiary': '#1E1E22',    // Card background
+          'bg-hover': '#2A2A2E',       // Hover states
+          'text-primary': '#F5F5F5',   // Warm white
+          'text-secondary': '#A1A1AA', // Warm grey
+          'text-muted': '#71717A',     // Muted text
+          'border': 'rgba(113, 113, 122, 0.2)',
+          'accent': '#FF6A00',         // Primary accent
+          'accent-end': '#FF2D00',     // Gradient end
         },
         // Neutral colors for light mode
         neutral: {

@@ -284,7 +284,7 @@ const Onboarding: React.FC<OnboardingProps> = ({
                   Already have an account?{' '}
                   <button
                     onClick={onSwitchToLogin}
-                    className="text-blue-400 hover:text-blue-300 font-medium"
+                    className="text-orange-400 hover:text-orange-300 font-medium"
                   >
                     Sign in
                   </button>
