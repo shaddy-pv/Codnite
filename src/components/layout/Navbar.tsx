@@ -84,8 +84,12 @@ const Navbar: React.FC<NavbarProps> = ({ user, onLogout }) => {
           {/* Logo */}
           <div className="flex items-center">
             <Link to="/" className="flex items-center space-x-3 group">
-              <div className="bg-gradient-to-r from-primary-600 to-secondary-600 rounded-xl h-9 w-9 flex items-center justify-center shadow-glow group-hover:shadow-strong group-hover:scale-105 transition-all duration-300">
-                <span className="text-white font-bold text-lg drop-shadow-sm">C</span>
+              <div className="rounded-xl h-9 w-9 flex items-center justify-center shadow-glow group-hover:shadow-strong group-hover:scale-105 transition-all duration-300 overflow-hidden">
+                <img 
+                  src="/assets/codinte-logo-2.png" 
+                  alt="Codnite Logo" 
+                  className="h-8 w-8 object-contain"
+                />
               </div>
               <span className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary-600 to-secondary-600 group-hover:from-primary-500 group-hover:to-secondary-500 transition-all duration-300">
                 Codnite

@@ -127,8 +127,12 @@ export function App() {
       <ThemeProvider>
         <div className="min-h-screen flex items-center justify-center bg-neutral-50 dark:bg-neutral-900">
           <div className="text-center">
-            <div className="bg-gradient-to-r from-primary-600 to-secondary-600 rounded-2xl h-16 w-16 flex items-center justify-center shadow-lg mx-auto mb-4 animate-bounce-subtle">
-              <span className="text-white font-bold text-2xl">C</span>
+            <div className="rounded-2xl h-16 w-16 flex items-center justify-center shadow-lg mx-auto mb-4 animate-bounce-subtle overflow-hidden">
+              <img 
+                src="/assets/codinte-logo-2.png" 
+                alt="Codnite Logo" 
+                className="h-14 w-14 object-contain"
+              />
             </div>
             <Loading size="lg" text="Loading Codnite..." />
           </div>

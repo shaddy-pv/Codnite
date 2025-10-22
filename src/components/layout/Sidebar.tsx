@@ -91,8 +91,12 @@ const Sidebar: React.FC = () => {
       {/* Sidebar Header */}
       <div className="p-4 border-b border-ember-border">
         <div className="flex items-center space-x-3">
-          <div className="bg-gradient-to-r from-primary-600 to-secondary-600 rounded-xl h-8 w-8 flex items-center justify-center shadow-glow">
-            <Sparkles className="h-4 w-4 text-white" />
+          <div className="rounded-xl h-8 w-8 flex items-center justify-center shadow-glow overflow-hidden">
+            <img 
+              src="/assets/codinte-logo-2.png" 
+              alt="Codnite Logo" 
+              className="h-7 w-7 object-contain"
+            />
           </div>
           <div>
             <h2 className="text-base font-bold text-ember-text-primary">Codnite</h2>
