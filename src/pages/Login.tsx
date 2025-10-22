@@ -84,11 +84,11 @@ const Login: React.FC<LoginProps> = ({ onLogin, onSwitchToRegister }) => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-dark-700 p-4">
+    <div className="min-h-screen flex items-center justify-center bg-ember-bg-primary p-4">
       <Card className="w-full max-w-md">
         <div className="text-center mb-6">
-          <h1 className="text-2xl font-bold text-dark-100 mb-2">Welcome Back</h1>
-          <p className="text-dark-300">Sign in to your Codnite account</p>
+          <h1 className="text-2xl font-bold text-ember-text-primary mb-2">Welcome Back</h1>
+          <p className="text-ember-text-secondary">Sign in to your Codnite account</p>
         </div>
 
         <form onSubmit={handleLogin} className="space-y-4">
@@ -101,7 +101,7 @@ const Login: React.FC<LoginProps> = ({ onLogin, onSwitchToRegister }) => {
             error={getFieldError('email')}
             onChange={(value) => updateField('email', value)}
             required
-            icon={<Mail className="h-5 w-5 text-dark-400" />}
+            icon={<Mail className="h-5 w-5 text-ember-text-muted" />}
           />
 
           <FormField
@@ -113,7 +113,7 @@ const Login: React.FC<LoginProps> = ({ onLogin, onSwitchToRegister }) => {
             error={getFieldError('password')}
             onChange={(value) => updateField('password', value)}
             required
-            icon={<Lock className="h-5 w-5 text-dark-400" />}
+            icon={<Lock className="h-5 w-5 text-ember-text-muted" />}
           />
 
           <Button
@@ -128,7 +128,7 @@ const Login: React.FC<LoginProps> = ({ onLogin, onSwitchToRegister }) => {
         </form>
 
         <div className="mt-6 text-center">
-          <p className="text-dark-300">
+          <p className="text-ember-text-secondary">
             Don't have an account?{' '}
             <button
               onClick={onSwitchToRegister}

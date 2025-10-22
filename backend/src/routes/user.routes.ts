@@ -638,7 +638,7 @@ router.get('/me/posts', authenticateToken, async (req: any, res) => {
     const result = await query(
       `SELECT 
         p.id, p.title, p.content, p.code, p.language, p.tags, p.created_at, p.updated_at,
-        u.id as author_id, u.username as author_username, u.name as author_name, u.college_id as author_college_id,
+        u.id as author_id, u.username as author_username, u.name as author_name, u.avatar_url as author_avatar_url, u.college_id as author_college_id,
         (SELECT COUNT(*) FROM comments c WHERE c.post_id = p.id) as comment_count,
         (SELECT COUNT(*) FROM likes l WHERE l.post_id = p.id) as like_count
       FROM posts p
@@ -667,6 +667,7 @@ router.get('/me/posts', authenticateToken, async (req: any, res) => {
         id: row.author_id,
         username: row.author_username,
         name: row.author_name,
+        avatarUrl: row.author_avatar_url,
         collegeId: row.author_college_id,
       },
       _count: {
@@ -698,7 +699,7 @@ router.get('/:userId/posts', async (req, res) => {
     const result = await query(
       `SELECT 
         p.id, p.title, p.content, p.code, p.language, p.tags, p.created_at, p.updated_at,
-        u.id as author_id, u.username as author_username, u.name as author_name, u.college_id as author_college_id,
+        u.id as author_id, u.username as author_username, u.name as author_name, u.avatar_url as author_avatar_url, u.college_id as author_college_id,
         (SELECT COUNT(*) FROM comments c WHERE c.post_id = p.id) as comment_count,
         (SELECT COUNT(*) FROM likes l WHERE l.post_id = p.id) as like_count
       FROM posts p
@@ -727,6 +728,7 @@ router.get('/:userId/posts', async (req, res) => {
         id: row.author_id,
         username: row.author_username,
         name: row.author_name,
+        avatarUrl: row.author_avatar_url,
         collegeId: row.author_college_id,
       },
       _count: {

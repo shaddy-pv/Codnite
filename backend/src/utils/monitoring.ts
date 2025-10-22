@@ -94,7 +94,7 @@ export const healthCheck = {
       const freeSpace = stats.bavail * stats.bsize;
       const totalSpace = stats.blocks * stats.bsize;
       const usedPercentage = ((totalSpace - freeSpace) / totalSpace) * 100;
-      
+
       return {
         status: usedPercentage > 90 ? 'warning' : 'healthy',
         freeSpace: freeSpace,

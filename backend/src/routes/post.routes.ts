@@ -47,7 +47,7 @@ router.get('/', async (req, res) => {
       postsQuery = `
         SELECT 
           p.id, p.title, p.content, p.code, p.language, p.tags, p.college_id, p.created_at, p.updated_at,
-          u.id as author_id, u.username as author_username, u.name as author_name, u.college_id as author_college_id,
+          u.id as author_id, u.username as author_username, u.name as author_name, u.avatar_url as author_avatar_url, u.college_id as author_college_id,
           (SELECT COUNT(*) FROM comments c WHERE c.post_id = p.id) as comment_count,
           (SELECT COUNT(*) FROM likes l WHERE l.post_id = p.id) as like_count
         FROM posts p
@@ -64,7 +64,7 @@ router.get('/', async (req, res) => {
       postsQuery = `
         SELECT 
           p.id, p.title, p.content, p.code, p.language, p.tags, p.college_id, p.created_at, p.updated_at,
-          u.id as author_id, u.username as author_username, u.name as author_name, u.college_id as author_college_id,
+          u.id as author_id, u.username as author_username, u.name as author_name, u.avatar_url as author_avatar_url, u.college_id as author_college_id,
           (SELECT COUNT(*) FROM comments c WHERE c.post_id = p.id) as comment_count,
           (SELECT COUNT(*) FROM likes l WHERE l.post_id = p.id) as like_count
         FROM posts p
@@ -95,6 +95,7 @@ router.get('/', async (req, res) => {
         id: row.author_id,
         username: row.author_username,
         name: row.author_name,
+        avatarUrl: row.author_avatar_url,
         collegeId: row.author_college_id,
       },
       _count: {
@@ -129,7 +130,7 @@ router.get('/:id', async (req, res) => {
     const postQuery = `
       SELECT 
         p.id, p.title, p.content, p.code, p.language, p.tags, p.created_at, p.updated_at,
-        u.id as author_id, u.username as author_username, u.name as author_name, u.college_id as author_college_id,
+        u.id as author_id, u.username as author_username, u.name as author_name, u.avatar_url as author_avatar_url, u.college_id as author_college_id,
         (SELECT COUNT(*) FROM comments c WHERE c.post_id = p.id) as comment_count,
         (SELECT COUNT(*) FROM likes l WHERE l.post_id = p.id) as like_count
       FROM posts p
@@ -183,6 +184,7 @@ router.get('/:id', async (req, res) => {
         id: post.author_id,
         username: post.author_username,
         name: post.author_name,
+        avatarUrl: post.author_avatar_url,
         collegeId: post.author_college_id,
       },
       comments,
@@ -456,7 +458,7 @@ router.get('/bookmarks', authenticate, async (req: any, res) => {
     const bookmarks = await query(`
       SELECT 
         p.id, p.title, p.content, p.code, p.language, p.tags, p.created_at, p.updated_at,
-        u.id as author_id, u.username as author_username, u.name as author_name, u.college_id as author_college_id,
+        u.id as author_id, u.username as author_username, u.name as author_name, u.avatar_url as author_avatar_url, u.college_id as author_college_id,
         (SELECT COUNT(*) FROM comments c WHERE c.post_id = p.id) as comment_count,
         (SELECT COUNT(*) FROM likes l WHERE l.post_id = p.id) as like_count,
         b.created_at as bookmarked_at
@@ -473,8 +475,31 @@ router.get('/bookmarks', authenticate, async (req: any, res) => {
       [userId]
     );
 
+    const formattedPosts = bookmarks.rows.map(row => ({
+      id: row.id,
+      title: row.title,
+      content: row.content,
+      code: row.code,
+      language: row.language,
+      tags: row.tags,
+      createdAt: row.created_at,
+      updatedAt: row.updated_at,
+      bookmarkedAt: row.bookmarked_at,
+      author: {
+        id: row.author_id,
+        username: row.author_username,
+        name: row.author_name,
+        avatarUrl: row.author_avatar_url,
+        collegeId: row.author_college_id,
+      },
+      _count: {
+        comments: parseInt(row.comment_count),
+        likes: parseInt(row.like_count),
+      }
+    }));
+
     res.json({
-      posts: bookmarks.rows,
+      posts: formattedPosts,
       total: parseInt(totalResult.rows[0].total),
       page: pageNum,
       limit: limitNum

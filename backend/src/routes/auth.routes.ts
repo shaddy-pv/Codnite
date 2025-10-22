@@ -130,7 +130,7 @@ router.post('/register', validateRegister, async (req, res) => {
     const result = await query(
       `INSERT INTO users (email, username, name, password, college_id, points, created_at, updated_at) 
        VALUES ($1, $2, $3, $4, $5, $6, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP) 
-       RETURNING id, email, username, name, college_id, points, created_at`,
+       RETURNING id, email, username, name, college_id, points, avatar_url, created_at`,
       [
         email.toLowerCase(),
         username.toLowerCase(),
@@ -151,7 +151,10 @@ router.post('/register', validateRegister, async (req, res) => {
     );
     
     res.status(201).json({ 
-      user, 
+      user: {
+        ...user,
+        avatarUrl: user.avatar_url
+      }, 
       token,
       message: 'User registered successfully'
     });
@@ -171,7 +174,7 @@ router.post('/login', validateLogin, async (req, res) => {
     
     // Find user with case-insensitive email
     const result = await query(
-      'SELECT id, email, username, name, password, college_id, points, created_at FROM users WHERE email = $1',
+      'SELECT id, email, username, name, password, college_id, points, avatar_url, created_at FROM users WHERE email = $1',
       [email.toLowerCase()]
     );
     
@@ -228,6 +231,7 @@ router.post('/login', validateLogin, async (req, res) => {
         name: user.name,
         collegeId: user.college_id,
         points: updatedUser.rows[0].points,
+        avatarUrl: user.avatar_url,
         createdAt: user.created_at,
       }, 
       token,

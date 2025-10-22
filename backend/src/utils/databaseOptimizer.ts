@@ -1,6 +1,6 @@
 import { Pool } from 'pg';
-import { config } from '../backend/src/config/env';
-import logger from '../backend/src/utils/logger';
+import config from '../config/env';
+import logger from './logger';
 
 /**
  * Database Optimizer

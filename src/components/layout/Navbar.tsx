@@ -24,6 +24,13 @@ const Navbar: React.FC<NavbarProps> = ({ user, onLogout }) => {
   // Fetch user points when component mounts or user changes
   useEffect(() => {
     if (user?.id) {
+      console.log('Navbar user data:', {
+        id: user.id,
+        name: user.name,
+        username: user.username,
+        avatarUrl: user.avatarUrl,
+        hasAvatarUrl: !!user.avatarUrl
+      });
       fetchUserPoints();
     }
   }, [user?.id]);
@@ -142,7 +149,7 @@ const Navbar: React.FC<NavbarProps> = ({ user, onLogout }) => {
                   className="flex items-center space-x-2 p-2 rounded-xl hover:bg-ember-bg-hover hover:scale-105 transition-all duration-300 group"
                 >
                   <Avatar 
-                    src={user.avatarUrl || "/default-avatar.svg"} 
+                    src={user.avatarUrl} 
                     alt={user.name}
                     size="sm" 
                     status="online"

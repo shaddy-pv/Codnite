@@ -40,7 +40,7 @@ apiClient.interceptors.response.use(
         urlPath.startsWith('/chat')
       )) ||
       (status === 404 && (
-        urlPath.startsWith('/posts/bookmarks')
+        urlPath.startsWith('/bookmarks')
       ))
     );
 
@@ -1123,7 +1123,7 @@ export const bookmarkApi = {
   },
 
   getBookmarkedPosts: async (page: number = 1, limit: number = 20) => {
-    const response = await apiClient.get(`/posts/bookmarks?page=${page}&limit=${limit}`);
+    const response = await apiClient.get(`/bookmarks?page=${page}&limit=${limit}`);
     return response.data;
   },
 };

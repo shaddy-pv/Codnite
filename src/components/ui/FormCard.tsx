@@ -16,9 +16,9 @@ export const FormCard: React.FC<FormCardProps> = ({
   variant = 'default'
 }) => {
   const variantClasses = {
-    default: 'bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700 shadow-soft',
-    elevated: 'bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700 shadow-medium',
-    outlined: 'bg-transparent border-2 border-neutral-300 dark:border-neutral-600 shadow-none'
+    default: 'bg-ember-bg-secondary border border-ember-border shadow-soft',
+    elevated: 'bg-ember-bg-secondary border border-ember-border shadow-medium',
+    outlined: 'bg-transparent border-2 border-ember-border shadow-none'
   };
 
   return (
@@ -26,12 +26,12 @@ export const FormCard: React.FC<FormCardProps> = ({
       {(title || subtitle) && (
         <div className="text-center mb-8">
           {title && (
-            <h2 className="text-2xl font-bold text-neutral-900 dark:text-neutral-100 mb-2">
+            <h2 className="text-2xl font-bold text-ember-text-primary mb-2">
               {title}
             </h2>
           )}
           {subtitle && (
-            <p className="text-neutral-600 dark:text-neutral-400 text-sm leading-relaxed">
+            <p className="text-ember-text-secondary text-sm leading-relaxed">
               {subtitle}
             </p>
           )}

@@ -148,7 +148,7 @@ const Onboarding: React.FC<OnboardingProps> = ({
       handleRegister();
     }
   };
-  return <div className="flex flex-col items-center justify-center min-h-screen w-full bg-dark-700 px-4">
+  return <div className="flex flex-col items-center justify-center min-h-screen w-full bg-ember-bg-primary px-4">
       <div className="max-w-md w-full">
         {/* Logo */}
         <div className="flex justify-center mb-8">
@@ -162,22 +162,22 @@ const Onboarding: React.FC<OnboardingProps> = ({
           </div>
         </div>
         {/* Tagline */}
-        <h1 className="text-center text-3xl font-bold mb-2 text-dark-100">
+        <h1 className="text-center text-3xl font-bold mb-2 text-ember-text-primary">
           United by Code
         </h1>
-        <p className="text-center text-dark-300 mb-8">
+        <p className="text-center text-ember-text-secondary mb-8">
           Join the community of coders, problem solvers, and innovators.
         </p>
         {/* Step indicator */}
         <div className="flex justify-center mb-8">
           <div className="flex items-center space-x-2">
-            {[1, 2, 3].map(s => <div key={s} className={`h-2 w-2 rounded-full transition-all ${s === step ? 'bg-primary-blue w-8' : s < step ? 'bg-primary-blue' : 'bg-dark-500'}`} />)}
+            {[1, 2, 3].map(s => <div key={s} className={`h-2 w-2 rounded-full transition-all ${s === step ? 'bg-primary-600 w-8' : s < step ? 'bg-primary-600' : 'bg-ember-border'}`} />)}
           </div>
         </div>
         {/* Step content */}
-        <div className="bg-dark-600 rounded-xl border border-dark-500 p-6 animate-fade-in">
+        <div className="bg-ember-bg-secondary rounded-xl border border-ember-border p-6 animate-fade-in">
           {step === 1 && <>
-              <h2 className="text-xl font-medium mb-6 text-center">
+              <h2 className="text-xl font-medium mb-6 text-center text-ember-text-primary">
                 Create your account
               </h2>
               <div className="space-y-4 mb-6">
@@ -188,9 +188,9 @@ const Onboarding: React.FC<OnboardingProps> = ({
                   Continue with LinkedIn
                 </Button>
                 <div className="flex items-center">
-                  <div className="flex-1 h-px bg-dark-500"></div>
-                  <span className="px-4 text-dark-300 text-sm">or</span>
-                  <div className="flex-1 h-px bg-dark-500"></div>
+                  <div className="flex-1 h-px bg-ember-border"></div>
+                  <span className="px-4 text-ember-text-muted text-sm">or</span>
+                  <div className="flex-1 h-px bg-ember-border"></div>
                 </div>
                 <div className="space-y-4">
                   <FormField
@@ -202,7 +202,7 @@ const Onboarding: React.FC<OnboardingProps> = ({
                     error={getFieldError('email')}
                     onChange={(value) => updateField('email', value)}
                     required
-                    icon={<Mail className="h-5 w-5 text-dark-400" />}
+                    icon={<Mail className="h-5 w-5 text-ember-text-muted" />}
                   />
                   
                   <FormField
@@ -214,7 +214,7 @@ const Onboarding: React.FC<OnboardingProps> = ({
                     error={getFieldError('username')}
                     onChange={(value) => updateField('username', value)}
                     required
-                    icon={<User className="h-5 w-5 text-dark-400" />}
+                    icon={<User className="h-5 w-5 text-ember-text-muted" />}
                   />
                   
                   <FormField
@@ -237,7 +237,7 @@ const Onboarding: React.FC<OnboardingProps> = ({
                     error={getFieldError('password')}
                     onChange={(value) => updateField('password', value)}
                     required
-                    icon={<Lock className="h-5 w-5 text-dark-400" />}
+                    icon={<Lock className="h-5 w-5 text-ember-text-muted" />}
                   />
                 </div>
               </div>
@@ -246,45 +246,22 @@ const Onboarding: React.FC<OnboardingProps> = ({
                 variant="primary" 
                 fullWidth 
                 rightIcon={<ArrowRight className="h-5 w-5" />} 
-                onClick={(e) => {
-                  console.log('Button clicked!', { e, step, isStepValid, isLoading });
-                  handleNextStep();
-                }}
+                onClick={handleNextStep}
                 disabled={isLoading || !isStepValid}
-                style={{ pointerEvents: 'auto', zIndex: 1000 }}
               >
-                {isLoading ? 'Creating Account...' : `Continue ${!isStepValid ? '(Invalid)' : '(Valid)'}`}
+                {isLoading ? 'Creating Account...' : 'Continue'}
               </Button>
               
-              {/* Debug button */}
-              <button 
-                onClick={() => {
-                  console.log('Debug button clicked!', { step, isValid, isStepValid, isLoading, fields, selectedCollege });
-                  alert(`Step: ${step}, Valid: ${isValid}, StepValid: ${isStepValid}, Loading: ${isLoading}`);
-                }}
-                style={{ 
-                  marginTop: '10px', 
-                  padding: '10px', 
-                  backgroundColor: 'red', 
-                  color: 'white', 
-                  border: 'none', 
-                  borderRadius: '5px',
-                  width: '100%'
-                }}
-              >
-                DEBUG: Click me to test
-              </button>
-              
               <div className="mt-6 text-center">
-                <p className="text-dark-300 text-xs mb-2">
+                <p className="text-ember-text-muted text-xs mb-2">
                   By continuing, you agree to Codnite's Terms of Service and
                   Privacy Policy.
                 </p>
-                <p className="text-dark-300 text-sm">
+                <p className="text-ember-text-secondary text-sm">
                   Already have an account?{' '}
                   <button
                     onClick={onSwitchToLogin}
-                    className="text-orange-400 hover:text-orange-300 font-medium"
+                    className="text-primary-400 hover:text-primary-300 font-medium"
                   >
                     Sign in
                   </button>
@@ -297,12 +274,12 @@ const Onboarding: React.FC<OnboardingProps> = ({
               </h2>
               <div className="space-y-6 mb-6">
                 <div>
-                  <label htmlFor="college-search" className="block text-sm font-medium text-dark-200 mb-1">
+                  <label htmlFor="college-search" className="block text-sm font-medium text-ember-text-primary mb-1">
                     Search for your college
                   </label>
                   <div className="relative">
                     <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                      <Search className="h-5 w-5 text-dark-400" />
+                      <Search className="h-5 w-5 text-ember-text-muted" />
                     </div>
                     <input 
                       type="text" 
@@ -320,16 +297,16 @@ const Onboarding: React.FC<OnboardingProps> = ({
                         }, 300);
                         return () => clearTimeout(timeoutId);
                       }}
-                      className="block w-full pl-10 pr-3 py-2.5 bg-dark-700 border border-dark-500 rounded-lg text-dark-100 focus:ring-2 focus:ring-primary-blue focus:border-primary-blue" 
+                      className="block w-full pl-10 pr-3 py-2.5 bg-ember-bg-tertiary border border-ember-border rounded-lg text-ember-text-primary focus:ring-2 focus:ring-primary-600 focus:border-primary-600" 
                       placeholder="Type your college name" 
                     />
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <p className="text-sm text-dark-300">Select your college:</p>
+                  <p className="text-sm text-ember-text-secondary">Select your college:</p>
                   <div className="max-h-60 overflow-y-auto space-y-2">
                     {isLoadingColleges ? (
-                      <div className="text-center py-4 text-dark-300">Loading colleges...</div>
+                      <div className="text-center py-4 text-ember-text-secondary">Loading colleges...</div>
                     ) : filteredColleges.length > 0 ? (
                       filteredColleges.map(college => (
                         <button 
@@ -339,7 +316,7 @@ const Onboarding: React.FC<OnboardingProps> = ({
                             updateField('collegeId', college.id);
                             setStep(3);
                           }} 
-                          className="w-full flex items-center p-3 bg-dark-700 rounded-lg hover:bg-dark-500 transition-colors"
+                          className="w-full flex items-center p-3 bg-ember-bg-tertiary rounded-lg hover:bg-ember-bg-hover transition-colors"
                         >
                           <img 
                             src={college.logoUrl || '/default-college-logo.svg'} 
@@ -350,10 +327,10 @@ const Onboarding: React.FC<OnboardingProps> = ({
                             }}
                           />
                           <div className="flex-1 text-left">
-                            <span className="text-dark-100 text-sm font-medium">
+                            <span className="text-ember-text-primary text-sm font-medium">
                               {college.name}
                             </span>
-                            <div className="text-dark-400 text-xs">
+                            <div className="text-ember-text-muted text-xs">
                               {college.shortName} • {college.location}
                               {college.city && college.state && (
                                 <span> • {college.city}, {college.state}</span>
@@ -363,7 +340,7 @@ const Onboarding: React.FC<OnboardingProps> = ({
                         </button>
                       ))
                     ) : (
-                      <div className="text-center py-4 text-dark-300">
+                      <div className="text-center py-4 text-ember-text-secondary">
                         No colleges found. Try a different search term.
                       </div>
                     )}
@@ -380,27 +357,27 @@ const Onboarding: React.FC<OnboardingProps> = ({
               </h2>
               
               <div className="space-y-4 mb-6">
-                <div className="bg-dark-600 rounded-xl p-4">
-                  <h3 className="text-white font-medium mb-2">Personal Information</h3>
+                <div className="bg-ember-bg-tertiary rounded-xl p-4">
+                  <h3 className="text-ember-text-primary font-medium mb-2">Personal Information</h3>
                   <div className="space-y-2 text-sm">
                     <div className="flex justify-between">
-                      <span className="text-dark-300">Name:</span>
-                      <span className="text-white">{fields.name.value}</span>
+                      <span className="text-ember-text-secondary">Name:</span>
+                      <span className="text-ember-text-primary">{fields.name.value}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-dark-300">Email:</span>
-                      <span className="text-white">{fields.email.value}</span>
+                      <span className="text-ember-text-secondary">Email:</span>
+                      <span className="text-ember-text-primary">{fields.email.value}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-dark-300">Username:</span>
-                      <span className="text-white">@{fields.username.value}</span>
+                      <span className="text-ember-text-secondary">Username:</span>
+                      <span className="text-ember-text-primary">@{fields.username.value}</span>
                     </div>
                   </div>
                 </div>
                 
                 {selectedCollege && (
-                  <div className="bg-dark-600 rounded-xl p-4">
-                    <h3 className="text-white font-medium mb-2">Selected College</h3>
+                  <div className="bg-ember-bg-tertiary rounded-xl p-4">
+                    <h3 className="text-ember-text-primary font-medium mb-2">Selected College</h3>
                     <div className="flex items-center space-x-3">
                       <img 
                         src={selectedCollege.logoUrl || '/default-college-logo.svg'} 
@@ -411,8 +388,8 @@ const Onboarding: React.FC<OnboardingProps> = ({
                         }}
                       />
                       <div>
-                        <div className="text-white font-medium">{selectedCollege.name}</div>
-                        <div className="text-dark-300 text-sm">
+                        <div className="text-ember-text-primary font-medium">{selectedCollege.name}</div>
+                        <div className="text-ember-text-secondary text-sm">
                           {selectedCollege.shortName} • {selectedCollege.location}
                           {selectedCollege.city && selectedCollege.state && (
                             <span> • {selectedCollege.city}, {selectedCollege.state}</span>

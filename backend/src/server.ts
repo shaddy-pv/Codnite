@@ -38,7 +38,7 @@ import config from './config/env';
 // Import utilities
 import logger, { morganStream } from './utils/logger';
 import { testConnection, closePool, query } from './utils/database';
-import { initializeDatabase } from './utils/schema';
+// import { initializeDatabase } from './utils/schema'; // Removed - not used
 import MigrationRunner from './utils/migrate';
 import cacheService from './services/cache.service';
 import dbOptimizer from './services/database-optimizer.service';
@@ -48,9 +48,7 @@ import {
   errorTracker, 
   securityMonitor, 
   rateLimitMonitor,
-  dbQueryMonitor,
-  startMemoryMonitoring,
-  healthCheck
+  startMemoryMonitoring
 } from './middleware/monitoring';
 import { 
   healthCheck as enhancedHealthCheck,
@@ -263,7 +261,7 @@ app.use(errorTracker);
 // Socket.IO authentication middleware
 io.use(async (socket, next) => {
   try {
-    const token = socket.handshake.auth.token;
+    const token = socket.handshake.auth['token'];
     if (!token) {
       return next(new Error('Authentication token required'));
     }
@@ -279,7 +277,7 @@ io.use(async (socket, next) => {
     }
 
     // Attach user info to socket
-    socket.userId = userId;
+    (socket as any).userId = userId;
     next();
   } catch (error) {
     logger.error('Socket authentication error:', error);
