@@ -1,24 +1,9 @@
 services:
-  # Frontend Service
-  - type: web
-    name: codnite-frontend
-    env: docker
-    dockerfilePath: ./Dockerfile.frontend
-    plan: starter
-    healthCheckPath: /health
-    envVars:
-      - key: VITE_API_URL
-        value: /api
-      - key: VITE_APP_NAME
-        value: Codnite
-      - key: VITE_CDN_URL
-        value: /uploads
-
-  # Backend Service  
+  # Backend API Service (using Docker Hub image)
   - type: web
     name: codnite-backend
     env: docker
-    dockerfilePath: ./Dockerfile.backend
+    dockerImage: shadan18/codnite-backend:latest
     plan: starter
     healthCheckPath: /api/health
     envVars:
@@ -38,30 +23,31 @@ services:
       - key: JWT_SECRET
         generateValue: true
       - key: ALLOWED_ORIGINS
-        value: https://codnite-frontend.onrender.com
+        value: https://codnite-frontend.onrender.com,https://codnite-backend.onrender.com
+      - key: POSTGRES_DB
+        value: codnite_production
+      - key: POSTGRES_USER
+        value: codnite_user
+      - key: BCRYPT_ROUNDS
+        value: 12
+      - key: MAX_FILE_SIZE
+        value: 10485760
+      - key: CACHE_TTL
+        value: 3600
 
-  # Code Execution Service
+  # Frontend Application (using Docker Hub image)
   - type: web
-    name: codnite-execution
+    name: codnite-frontend
     env: docker
-    dockerfilePath: ./Dockerfile.backend
+    dockerImage: shadan18/codnite-frontend:latest
     plan: starter
-    startCommand: node backend/dist/services/execution-server.js
-    healthCheckPath: /health
     envVars:
-      - key: NODE_ENV
-        value: production
-      - key: PORT
-        value: 5001
-      - key: DATABASE_URL
-        fromDatabase:
-          name: codnite-db
-          property: connectionString
-      - key: REDIS_URL
-        fromService:
-          type: redis
-          name: codnite-redis
-          property: connectionString
+      - key: VITE_API_URL
+        value: /api
+      - key: VITE_APP_NAME
+        value: Codnite
+      - key: VITE_CDN_URL
+        value: /uploads
 
 databases:
   - name: codnite-db
