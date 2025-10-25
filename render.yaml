@@ -1,9 +1,8 @@
 services:
-  # Backend API Service (using Docker Hub image)
   - type: web
     name: codnite-backend
     env: docker
-    dockerImage: shadan18/codnite-backend:latest
+    dockerfilePath: ./Dockerfile.backend
     plan: starter
     healthCheckPath: /api/health
     envVars:
@@ -29,17 +28,16 @@ services:
       - key: POSTGRES_USER
         value: codnite_user
       - key: BCRYPT_ROUNDS
-        value: 12
+        value: "12"
       - key: MAX_FILE_SIZE
-        value: 10485760
+        value: "10485760"
       - key: CACHE_TTL
-        value: 3600
+        value: "3600"
 
-  # Frontend Application (using Docker Hub image)
   - type: web
     name: codnite-frontend
     env: docker
-    dockerImage: shadan18/codnite-frontend:latest
+    dockerfilePath: ./Dockerfile.frontend
     plan: starter
     envVars:
       - key: VITE_API_URL
