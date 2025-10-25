@@ -20,12 +20,6 @@ services:
           property: connectionString
       - key: JWT_SECRET
         generateValue: true
-      - key: ALLOWED_ORIGINS
-        value: https://codnite-frontend.onrender.com
-      - key: POSTGRES_DB
-        value: codnite_production
-      - key: POSTGRES_USER
-        value: codnite_user
 
   - type: web
     name: codnite-frontend
