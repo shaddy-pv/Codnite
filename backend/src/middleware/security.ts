@@ -2,8 +2,8 @@ import { Request, Response, NextFunction } from 'express';
 import rateLimit from 'express-rate-limit';
 import helmet from 'helmet';
 import { z } from 'zod';
-import logger from '../utils/logger';
-import config from '../config/env';
+import logger from '../utils/logger.js';
+import config from '../config/env.js';
 
 // Enhanced security middleware for production
 export const securityMiddleware = helmet({

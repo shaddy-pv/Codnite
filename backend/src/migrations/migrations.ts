@@ -49,8 +49,13 @@ export const migrations: Migration[] = [
       CREATE TABLE IF NOT EXISTS colleges (
         id VARCHAR(50) PRIMARY KEY,
         name VARCHAR(255) NOT NULL,
+        short_name VARCHAR(100),
         logo_url VARCHAR(500),
         website VARCHAR(500),
+        location VARCHAR(255),
+        city VARCHAR(100),
+        state VARCHAR(100),
+        rank INTEGER,
         description TEXT,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );

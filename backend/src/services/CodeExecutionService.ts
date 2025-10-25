@@ -3,7 +3,7 @@ import fs from 'fs/promises';
 import path from 'path';
 import os from 'os';
 import { v4 as uuidv4 } from 'uuid';
-import logger from '../utils/logger';
+import logger from '../utils/logger.js';
 
 interface ExecutionResult {
   success: boolean;
@@ -127,7 +127,7 @@ class CodeExecutionService {
   }
 
   private getFileName(language: string): string {
-    const extensions = {
+    const extensions: Record<string, string> = {
       javascript: 'solution.js',
       python: 'solution.py',
       java: 'Solution.java',
@@ -156,7 +156,7 @@ class CodeExecutionService {
 
       const executionTime = Date.now() - startTime;
 
-      if (result.timedOut) {
+      if ('timedOut' in result) {
         return {
           success: false,
           output: '',
@@ -192,7 +192,7 @@ class CodeExecutionService {
   }
 
   private getExecutionCommand(filePath: string, language: string): string[] {
-    const commands = {
+    const commands: Record<string, string[]> = {
       javascript: ['node', filePath],
       python: ['python', filePath],
       java: ['java', '-cp', path.dirname(filePath), 'Solution'],
@@ -203,6 +203,10 @@ class CodeExecutionService {
 
   private async runExecution(command: string[], input: string): Promise<{ stdout: string; stderr: string; exitCode: number }> {
     return new Promise((resolve, reject) => {
+      if (!command[0]) {
+        reject(new Error('Invalid command'));
+        return;
+      }
       const child = spawn(command[0], command.slice(1), {
         stdio: ['pipe', 'pipe', 'pipe'],
         timeout: 30000 // 30 second timeout

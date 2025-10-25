@@ -11,51 +11,52 @@ import { Server as SocketIOServer } from 'socket.io';
 import jwt from 'jsonwebtoken';
 
 // Import routes
-import authRoutes from './routes/auth.routes';
-import userRoutes from './routes/user.routes';
-import usersRoutes from './routes/users.routes';
-import postRoutes from './routes/post.routes';
-import challengeRoutes from './routes/challenge.routes';
-import problemRoutes from './routes/problem.routes';
-import followRoutes from './routes/follow.routes';
-import notificationRoutes from './routes/notification.routes';
-import collegeRoutes from './routes/college.routes';
-import leaderboardRoutes from './routes/leaderboard.routes';
-import chatRoutes from './routes/chat.routes';
-import searchRoutes from './routes/search.routes';
-import recommendationRoutes from './routes/recommendations.routes';
-import executionRoutes from './routes/execution.routes';
-import commentsRoutes from './routes/comments.routes';
-import socialRoutes from './routes/social.routes';
-import optimizedRoutes from './routes/optimized.routes';
-import databaseViewerRoutes from './routes/database-viewer.routes';
-import { NotificationService } from './services/notification.service';
-import testNotificationRoutes from './routes/test-notifications.routes';
-import levelRoutes from './routes/level.routes';
-import uploadRoutes from './routes/upload.routes';
-import config from './config/env';
+import authRoutes from './routes/auth.routes.js';
+import userRoutes from './routes/user.routes.js';
+import usersRoutes from './routes/users.routes.js';
+import postRoutes from './routes/post.routes.js';
+import challengeRoutes from './routes/challenge.routes.js';
+import problemRoutes from './routes/problem.routes.js';
+import followRoutes from './routes/follow.routes.js';
+import notificationRoutes from './routes/notification.routes.js';
+import collegeRoutes from './routes/college.routes.js';
+import leaderboardRoutes from './routes/leaderboard.routes.js';
+import chatRoutes from './routes/chat.routes.js';
+import searchRoutes from './routes/search.routes.js';
+import recommendationRoutes from './routes/recommendations.routes.js';
+import executionRoutes from './routes/execution.routes.js';
+import commentsRoutes from './routes/comments.routes.js';
+import socialRoutes from './routes/social.routes.js';
+import optimizedRoutes from './routes/optimized.routes.js';
+import databaseViewerRoutes from './routes/database-viewer.routes.js';
+import { NotificationService } from './services/notification.service.js';
+import testNotificationRoutes from './routes/test-notifications.routes.js';
+import levelRoutes from './routes/level.routes.js';
+import uploadRoutes from './routes/upload.routes.js';
+import bookmarksRoutes from './routes/bookmarks.routes.js';
+import config from './config/env.js';
 
 // Import utilities
-import logger, { morganStream } from './utils/logger';
-import { testConnection, closePool, query } from './utils/database';
+import logger, { morganStream } from './utils/logger.js';
+import { testConnection, closePool, query } from './utils/database.js';
 // import { initializeDatabase } from './utils/schema'; // Removed - not used
-import MigrationRunner from './utils/migrate';
-import cacheService from './services/cache.service';
-import dbOptimizer from './services/database-optimizer.service';
-import cdnService from './services/cdn.service';
+import MigrationRunner from './utils/migrate.js';
+import cacheService from './services/cache.service.js';
+import dbOptimizer from './services/database-optimizer.service.js';
+import cdnService from './services/cdn.service.js';
 import { 
   performanceMonitor, 
   errorTracker, 
   securityMonitor, 
   rateLimitMonitor,
   startMemoryMonitoring
-} from './middleware/monitoring';
+} from './middleware/monitoring.js';
 import { 
   healthCheck as enhancedHealthCheck,
   livenessProbe,
   readinessProbe,
   metrics
-} from './utils/health-checks';
+} from './utils/health-checks.js';
 
 dotenv.config();
 
@@ -225,6 +226,7 @@ app.use('/api/db', databaseViewerRoutes);
 app.use('/api/test-notifications', testNotificationRoutes(notificationService));
 app.use('/api/upload', uploadRoutes);
 app.use('/api/level', levelRoutes);
+app.use('/api/bookmarks', bookmarksRoutes);
 
 // Enhanced health check with detailed information
 app.get('/api/health', enhancedHealthCheck);
@@ -237,9 +239,9 @@ app.get('/health/ready', readinessProbe);
 // Metrics endpoint for monitoring
 app.get('/api/metrics', metrics);
 
-// 404 handler
+// 404 handler for API routes
 app.use((req, res) => {
-  logger.warn('Route not found', {
+  logger.warn('Unexpected route not found', {
     path: req.path,
     method: req.method,
     ip: req.ip,

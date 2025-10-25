@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
-import { query } from './database';
-import logger from './logger';
+import { query } from './database.js';
+import logger from './logger.js';
 
 async function fixExistingDatabase() {
   try {

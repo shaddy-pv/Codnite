@@ -1,5 +1,5 @@
 import Redis from 'ioredis';
-import config from '../config/env';
+import config from '../config/env.js';
 
 class CacheService {
   private redis: Redis;

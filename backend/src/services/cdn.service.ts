@@ -1,5 +1,5 @@
 import AWS from 'aws-sdk';
-import config from '../config/env';
+import config from '../config/env.js';
 
 interface CDNConfig {
   provider: 'aws' | 'cloudinary' | 'local';

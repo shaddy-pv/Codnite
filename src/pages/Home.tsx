@@ -161,6 +161,12 @@ const Home: React.FC = () => {
     ));
   };
 
+  const handleDeletePost = (postId: string) => {
+    // Remove the deleted post from the local state
+    setPosts(prev => prev.filter(post => post.id !== postId));
+    success('Post deleted successfully');
+  };
+
   const formatTimeRemaining = (endDate: string) => {
     const end = new Date(endDate);
     const now = new Date();
@@ -315,6 +321,7 @@ const Home: React.FC = () => {
                           onCommentCountChange={handleCommentAdded}
                           onShare={() => {}}
                           onBookmark={() => {}}
+                          onDelete={handleDeletePost}
                           showComments={openCommentSections.has(post.id)}
                         />
                       </React.Suspense>

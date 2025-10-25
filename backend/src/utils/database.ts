@@ -1,5 +1,5 @@
 import { Pool, PoolClient } from 'pg';
-import config from '../config/env';
+import config from '../config/env.js';
 
 // Create a connection pool
 const pool = new Pool({

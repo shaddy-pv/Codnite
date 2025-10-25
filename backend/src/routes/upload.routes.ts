@@ -1,8 +1,8 @@
 import { Router } from 'express';
-import { authenticate } from '../middleware/auth';
-import { query } from '../utils/database';
-import logger from '../utils/logger';
-import fileUploadService from '../services/file-upload.service';
+import { authenticate } from '../middleware/auth.js';
+import { query } from '../utils/database.js';
+import logger from '../utils/logger.js';
+import fileUploadService from '../services/file-upload.service.js';
 import fs from 'fs';
 import path from 'path';
 

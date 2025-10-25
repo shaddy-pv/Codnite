@@ -1,7 +1,7 @@
 import { Router } from 'express';
-import { query } from '../utils/database';
-import { authenticateToken } from '../middleware/auth';
-import logger from '../utils/logger';
+import { query } from '../utils/database.js';
+import { authenticateToken } from '../middleware/auth.js';
+import logger from '../utils/logger.js';
 
 const router = Router();
 
@@ -49,6 +49,102 @@ router.get('/me', authenticateToken, async (req: any, res) => {
   } catch (error) {
     logger.error('Error fetching current user profile:', error);
     res.status(500).json({ error: 'Failed to fetch user profile' });
+  }
+});
+
+// Update current user profile (me)
+router.put('/me', authenticateToken, async (req: any, res) => {
+  try {
+    const userId = req.user.userId;
+    const { name, username, bio, githubUsername, linkedinUrl, collegeId } = req.body;
+
+    // Check if username is already taken by another user
+    if (username) {
+      const existingUser = await query(
+        'SELECT id FROM users WHERE username = $1 AND id != $2',
+        [username, userId]
+      );
+
+      if (existingUser.rows.length > 0) {
+        return res.status(400).json({ error: 'Username already taken' });
+      }
+    }
+
+    // Build dynamic update query
+    const updateFields = [];
+    const values = [];
+    let paramCount = 1;
+
+    if (name !== undefined) {
+      updateFields.push(`name = $${paramCount}`);
+      values.push(name);
+      paramCount++;
+    }
+    if (username !== undefined) {
+      updateFields.push(`username = $${paramCount}`);
+      values.push(username);
+      paramCount++;
+    }
+    if (bio !== undefined) {
+      updateFields.push(`bio = $${paramCount}`);
+      values.push(bio);
+      paramCount++;
+    }
+    if (githubUsername !== undefined) {
+      updateFields.push(`github_username = $${paramCount}`);
+      values.push(githubUsername);
+      paramCount++;
+    }
+    if (linkedinUrl !== undefined) {
+      updateFields.push(`linkedin_url = $${paramCount}`);
+      values.push(linkedinUrl);
+      paramCount++;
+    }
+    if (collegeId !== undefined) {
+      updateFields.push(`college_id = $${paramCount}`);
+      values.push(collegeId);
+      paramCount++;
+    }
+
+    if (updateFields.length === 0) {
+      return res.status(400).json({ error: 'No fields to update' });
+    }
+
+    updateFields.push(`updated_at = CURRENT_TIMESTAMP`);
+    values.push(userId);
+
+    const updateQuery = `
+      UPDATE users 
+      SET ${updateFields.join(', ')}
+      WHERE id = $${paramCount}
+      RETURNING id, email, username, name, bio, avatar_url, cover_photo_url, github_username, linkedin_url, college_id, points, created_at, updated_at
+    `;
+
+    const result = await query(updateQuery, values);
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    const user = result.rows[0];
+    res.json({
+      id: user.id,
+      email: user.email,
+      username: user.username,
+      name: user.name,
+      bio: user.bio,
+      avatarUrl: user.avatar_url,
+      coverPhotoUrl: user.cover_photo_url,
+      githubUsername: user.github_username,
+      linkedinUrl: user.linkedin_url,
+      collegeId: user.college_id,
+      points: user.points,
+      createdAt: user.created_at,
+      updatedAt: user.updated_at,
+    });
+  } catch (error) {
+    logger.error('Error updating current user profile:', error);
+    res.status(500).json({ error: 'Failed to update user profile' });
   }
 });
 

@@ -1,8 +1,8 @@
 import { Router } from 'express';
-import { query } from '../utils/database';
-import { authenticateToken } from '../middleware/auth';
-import logger from '../utils/logger';
-import CodeExecutionService, { ExecutionRequest } from '../services/CodeExecutionService';
+import { query } from '../utils/database.js';
+import { authenticateToken } from '../middleware/auth.js';
+import logger from '../utils/logger.js';
+import CodeExecutionService, { ExecutionRequest } from '../services/CodeExecutionService.js';
 
 const router = Router();
 const executionService = new CodeExecutionService();

@@ -1,8 +1,8 @@
 import { Router } from 'express';
-import { authenticateToken } from '../middleware/auth';
-import CodeExecutionService, { ExecutionRequest } from '../services/CodeExecutionService';
-import { query } from '../utils/database';
-import logger from '../utils/logger';
+import { authenticateToken } from '../middleware/auth.js';
+import CodeExecutionService, { ExecutionRequest } from '../services/CodeExecutionService.js';
+import { query } from '../utils/database.js';
+import logger from '../utils/logger.js';
 
 const router = Router();
 const executionService = new CodeExecutionService();
@@ -14,8 +14,8 @@ router.post('/execute', authenticateToken, async (req: any, res) => {
     const userId = req.user.userId;
 
     if (!problemId || !code || !language) {
-      return res.status(400).json({ 
-        error: 'Missing required fields: problemId, code, language' 
+      return res.status(400).json({
+        error: 'Missing required fields: problemId, code, language'
       });
     }
 
@@ -80,7 +80,7 @@ router.post('/execute', authenticateToken, async (req: any, res) => {
     for (let i = 0; i < results.length; i++) {
       const result = results[i];
       const testCase = testCases[i];
-      
+
       await query(
         `INSERT INTO submission_test_results (submission_id, test_case_id, passed, output, error, execution_time)
          VALUES ($1, $2, $3, $4, $5, $6)`,
@@ -212,15 +212,15 @@ router.post('/test', async (req, res) => {
     const { code, language } = req.body;
 
     if (!code || !language) {
-      return res.status(400).json({ 
-        error: 'Missing required fields: code, language' 
+      return res.status(400).json({
+        error: 'Missing required fields: code, language'
       });
     }
 
     // Simple test case for Hello World
     const testCases = [
-      { 
-        input: '', 
+      {
+        input: '',
         expectedOutput: 'Hello World',
         description: 'Basic Hello World test'
       }
@@ -258,7 +258,7 @@ router.post('/test', async (req, res) => {
 router.get('/health', async (req, res) => {
   try {
     const isHealthy = await executionService.healthCheck();
-    
+
     if (isHealthy) {
       res.json({ status: 'healthy', service: 'code-execution' });
     } else {

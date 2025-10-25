@@ -1,5 +1,5 @@
-import { query } from '../utils/database';
-import cacheService from './cache.service';
+import { query } from '../utils/database.js';
+import cacheService from './cache.service.js';
 
 interface QueryOptions {
   useCache?: boolean;

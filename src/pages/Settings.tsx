@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { User, Mail, Lock, Bell, Palette, Shield, Trash2, Save, Eye, EyeOff } from 'lucide-react';
+import { User, Mail, Lock, Bell, Shield, Trash2, Save, Eye, EyeOff } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Card } from '../components/ui/Card';
 import { useTheme } from '../context/ThemeContext';
 import { useToast } from '../components/ui/Toast';
-import { api } from '../services/api';
+import { api, authAPI } from '../services/api';
 
 interface UserSettings {
   name: string;
@@ -92,11 +92,9 @@ const Settings: React.FC = () => {
       setIsLoading(true);
       await api.updateProfile({
         name: profileSettings.name,
-        username: profileSettings.username,
         bio: profileSettings.bio,
         githubUsername: profileSettings.githubUsername,
-        linkedinUrl: profileSettings.linkedinUrl,
-        collegeId: profileSettings.collegeId
+        linkedinUrl: profileSettings.linkedinUrl
       });
       
       success('Profile updated successfully!');
@@ -113,19 +111,21 @@ const Settings: React.FC = () => {
       return;
     }
     
-    if (passwordData.newPassword.length < 6) {
-      showError('Password must be at least 6 characters long');
+    if (passwordData.newPassword.length < 8) {
+      showError('Password must be at least 8 characters long');
       return;
     }
 
     try {
       setIsLoading(true);
-      // This would need to be implemented in the backend
-      // await api.changePassword(passwordData);
+      await authAPI.changePassword({
+        currentPassword: passwordData.currentPassword,
+        newPassword: passwordData.newPassword
+      });
       success('Password changed successfully!');
       setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
     } catch (err: any) {
-      showError('Failed to change password', err.message);
+      showError('Failed to change password', err.response?.data?.error || err.message);
     } finally {
       setIsLoading(false);
     }
@@ -145,17 +145,25 @@ const Settings: React.FC = () => {
   };
 
   const handleAccountDeletion = async () => {
-    if (!confirm('Are you sure you want to delete your account? This action cannot be undone.')) {
+    const password = prompt('Please enter your password to confirm account deletion:');
+    if (!password) {
+      return;
+    }
+
+    if (!confirm('Are you sure you want to delete your account? This action cannot be undone and will delete all your posts, comments, and data.')) {
       return;
     }
     
     try {
       setIsLoading(true);
-      // This would need to be implemented in the backend
-      // await api.deleteAccount();
+      await api.deleteAccount(password);
       success('Account deleted successfully');
+      // Clear local storage and redirect to login
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      window.location.href = '/';
     } catch (err: any) {
-      showError('Failed to delete account', err.message);
+      showError('Failed to delete account', err.response?.data?.error || err.message);
     } finally {
       setIsLoading(false);
     }

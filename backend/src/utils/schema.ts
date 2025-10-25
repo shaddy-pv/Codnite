@@ -1,5 +1,5 @@
-import { query } from './database';
-import { seedProblems, seedColleges, seedUsers } from './seed';
+import { query } from './database.js';
+import { seedProblems, seedColleges, seedUsers } from './seed.js';
 
 // Drop all tables and recreate with correct schema
 export const resetDatabase = async (): Promise<void> => {

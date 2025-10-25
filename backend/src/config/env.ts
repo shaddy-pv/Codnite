@@ -1,7 +1,7 @@
 import dotenv from 'dotenv';
-
-dotenv.config();
-
+if (process.env.NODE_ENV !== 'production') {
+  dotenv.config();
+}
 // Environment variable validation
 const requiredEnvVars = {
   DATABASE_URL: process.env.DATABASE_URL,
@@ -96,8 +96,8 @@ export const config = {
   jwtSecret: process.env.JWT_SECRET!,
   frontendUrl: process.env.FRONTEND_URL || 'http://localhost:5173',
   corsOrigins: process.env.NODE_ENV === 'production' 
-    ? (process.env.ALLOWED_ORIGINS?.split(',') || [process.env.FRONTEND_URL!])
-    : ['http://localhost:3000', 'http://localhost:5173', 'http://localhost:5174', 'http://localhost:5175', 'http://localhost:4173'],
+    ? (process.env.ALLOWED_ORIGINS?.split(',') || [process.env.FRONTEND_URL!, 'http://localhost', 'http://localhost:80'])
+    : ['http://localhost:3000', 'http://localhost:5173', 'http://localhost:5174', 'http://localhost:5175', 'http://localhost:4173', 'http://localhost', 'http://localhost:80'],
   
   // Rate limiting configuration
   rateLimit: {

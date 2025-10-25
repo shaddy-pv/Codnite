@@ -472,6 +472,7 @@ const CollegeCommunity: React.FC = () => {
         onClose={() => setShowCreateModal(false)}
         onPostCreated={(newPost) => {
           setPosts(prev => [newPost, ...prev]);
+          setCollege(prev => prev ? { ...prev, postCount: prev.postCount + 1 } : prev);
           setShowCreateModal(false);
         }}
         collegeId={collegeId} // Pass the collegeId

@@ -1,6 +1,6 @@
 import { Router, Request, Response } from 'express';
-import { healthCheck } from '../utils/monitoring';
-import logger from '../utils/logger';
+import { healthCheck } from '../utils/monitoring.js';
+import logger from '../utils/logger.js';
 
 const router = Router();
 

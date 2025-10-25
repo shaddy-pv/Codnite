@@ -1,8 +1,8 @@
 import { Router } from 'express';
-import { query } from '../utils/database';
-import { authenticate } from '../middleware/auth';
-import logger from '../utils/logger';
-import { NotificationService } from '../services/notification.service';
+import { query } from '../utils/database.js';
+import { authenticate } from '../middleware/auth.js';
+import logger from '../utils/logger.js';
+import { NotificationService } from '../services/notification.service.js';
 
 const createFollowRoutes = (notificationService: NotificationService) => {
   const router = Router();

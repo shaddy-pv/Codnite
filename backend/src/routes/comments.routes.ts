@@ -1,9 +1,9 @@
 import { Router } from 'express';
-import { query } from '../utils/database';
-import { authenticate } from '../middleware/auth';
-import { processMentions } from './social.routes';
-import logger from '../utils/logger';
-import { NotificationService } from '../services/notification.service';
+import { query } from '../utils/database.js';
+import { authenticate } from '../middleware/auth.js';
+import { processMentions } from './social.routes.js';
+import logger from '../utils/logger.js';
+import { NotificationService } from '../services/notification.service.js';
 
 const createCommentsRoutes = (notificationService: NotificationService) => {
   const router = Router();

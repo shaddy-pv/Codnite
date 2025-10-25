@@ -1,8 +1,8 @@
 import { Router } from 'express';
-import { authenticateToken } from '../middleware/auth';
-import cacheService from '../services/cache.service';
-import dbOptimizer from '../services/database-optimizer.service';
-import cdnService from '../services/cdn.service';
+import { authenticateToken } from '../middleware/auth.js';
+import cacheService from '../services/cache.service.js';
+import dbOptimizer from '../services/database-optimizer.service.js';
+import cdnService from '../services/cdn.service.js';
 
 const router = Router();
 

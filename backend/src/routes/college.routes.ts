@@ -1,7 +1,7 @@
 import { Router } from 'express';
-import { query } from '../utils/database';
-import { authenticateToken } from '../middleware/auth';
-import logger from '../utils/logger';
+import { query } from '../utils/database.js';
+import { authenticateToken } from '../middleware/auth.js';
+import logger from '../utils/logger.js';
 
 const router = Router();
 
@@ -107,7 +107,7 @@ router.get('/:id', async (req, res) => {
         COUNT(DISTINCT p.id) as post_count
       FROM colleges c
       LEFT JOIN users u ON c.id = u.college_id
-      LEFT JOIN posts p ON u.id = p.author_id
+      LEFT JOIN posts p ON c.id = p.college_id
       WHERE c.id = $1
       GROUP BY c.id, c.name, c.short_name, c.logo_url, c.location, c.city, c.state, c.rank, c.description
     `;
@@ -159,7 +159,7 @@ router.get('/:id/members', async (req, res) => {
         COUNT(DISTINCT s.id) as submission_count,
         COUNT(DISTINCT f2.follower_id) as follower_count
       FROM users u
-      LEFT JOIN posts p ON u.id = p.author_id
+      LEFT JOIN posts p ON u.id = p.author_id AND p.college_id = $1
       LEFT JOIN submissions s ON u.id = s.user_id
       LEFT JOIN follows f2 ON u.id = f2.following_id
       WHERE u.college_id = $1
@@ -269,11 +269,11 @@ router.get('/:id/posts', async (req, res) => {
     const postsQuery = `
       SELECT 
         p.id, p.title, p.content, p.code, p.language, p.tags, p.college_id, p.created_at, p.updated_at,
-        u.id as author_id, u.username as author_username, u.name as author_name, u.avatar_url as author_avatar,
+        u.id as author_id, COALESCE(u.username, 'anonymous') as author_username, COALESCE(u.name, 'Anonymous User') as author_name, u.avatar_url as author_avatar,
         (SELECT COUNT(*) FROM comments c WHERE c.post_id = p.id) as comment_count,
         (SELECT COUNT(*) FROM likes l WHERE l.post_id = p.id) as like_count
       FROM posts p
-      JOIN users u ON p.author_id = u.id
+      LEFT JOIN users u ON p.author_id = u.id
       WHERE p.college_id = $1
       ORDER BY p.created_at DESC
       LIMIT $2 OFFSET $3

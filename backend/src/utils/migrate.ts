@@ -1,6 +1,6 @@
-import { query, transaction } from '../utils/database';
-import { getMigrations, Migration } from './migrations';
-import logger from '../utils/logger';
+import { query, transaction } from '../utils/database.js';
+import { migrations, Migration } from '../migrations/migrations.js';
+import logger from '../utils/logger.js';
 
 export class MigrationRunner {
   private static instance: MigrationRunner;
@@ -17,8 +17,8 @@ export class MigrationRunner {
    */
   async getAppliedMigrations(): Promise<string[]> {
     try {
-      const result = await query('SELECT id FROM migrations ORDER BY id');
-      return result.rows.map(row => row.id);
+      const result = await query('SELECT version FROM migrations ORDER BY version');
+      return result.rows.map(row => row.version);
     } catch (error) {
       // If migrations table doesn't exist, return empty array
       if (error.code === '42P01') { // Table doesn't exist
@@ -33,8 +33,8 @@ export class MigrationRunner {
    */
   async getPendingMigrations(): Promise<Migration[]> {
     const appliedMigrations = await this.getAppliedMigrations();
-    const availableMigrations = await getMigrations();
-    return availableMigrations.filter(migration => !appliedMigrations.includes(migration.id));
+    const availableMigrations = migrations;
+    return availableMigrations.filter(migration => !appliedMigrations.includes(migration.version));
   }
 
   /**
@@ -43,21 +43,21 @@ export class MigrationRunner {
   async applyMigration(migration: Migration): Promise<void> {
     try {
       await transaction(async (client) => {
-        logger.info(`Applying migration ${migration.id}: ${migration.name}`);
+        logger.info(`Applying migration ${migration.version}: ${migration.name}`);
         
         // Execute the migration SQL
         await client.query(migration.up);
         
         // Record the migration as applied
         await client.query(
-          'INSERT INTO migrations (id, name) VALUES ($1, $2)',
-          [migration.id, migration.name]
+          'INSERT INTO migrations (version, name) VALUES ($1, $2)',
+          [migration.version, migration.name]
         );
         
-        logger.info(`Migration ${migration.id} applied successfully`);
+        logger.info(`Migration ${migration.version} applied successfully`);
       });
     } catch (error) {
-      logger.error(`Failed to apply migration ${migration.id}:`, error);
+      logger.error(`Failed to apply migration ${migration.version}:`, error);
       throw error;
     }
   }
@@ -68,18 +68,18 @@ export class MigrationRunner {
   async rollbackMigration(migration: Migration): Promise<void> {
     try {
       await transaction(async (client) => {
-        logger.info(`Rolling back migration ${migration.id}: ${migration.name}`);
+        logger.info(`Rolling back migration ${migration.version}: ${migration.name}`);
         
         // Execute the rollback SQL
         await client.query(migration.down);
         
         // Remove the migration record
-        await client.query('DELETE FROM migrations WHERE id = $1', [migration.id]);
+        await client.query('DELETE FROM migrations WHERE version = $1', [migration.version]);
         
-        logger.info(`Migration ${migration.id} rolled back successfully`);
+        logger.info(`Migration ${migration.version} rolled back successfully`);
       });
     } catch (error) {
-      logger.error(`Failed to rollback migration ${migration.id}:`, error);
+      logger.error(`Failed to rollback migration ${migration.version}:`, error);
       throw error;
     }
   }
@@ -116,8 +116,8 @@ export class MigrationRunner {
     }
 
     const lastMigrationId = appliedMigrations[appliedMigrations.length - 1];
-    const availableMigrations = await getMigrations();
-    const migration = availableMigrations.find(m => m.id === lastMigrationId);
+    const availableMigrations = migrations;
+    const migration = availableMigrations.find(m => m.version === lastMigrationId);
     
     if (!migration) {
       throw new Error(`Migration ${lastMigrationId} not found in registry`);
@@ -140,10 +140,10 @@ export class MigrationRunner {
     logger.info(`Rolling back ${appliedMigrations.length} migrations`);
 
     // Rollback in reverse order
-    const availableMigrations = await getMigrations();
+    const availableMigrations = migrations;
     for (let i = appliedMigrations.length - 1; i >= 0; i--) {
       const migrationId = appliedMigrations[i];
-      const migration = availableMigrations.find(m => m.id === migrationId);
+      const migration = availableMigrations.find(m => m.version === migrationId);
       
       if (migration) {
         await this.rollbackMigration(migration);
@@ -194,7 +194,7 @@ export class MigrationRunner {
         logger.info('Creating migrations table');
         await query(`
           CREATE TABLE migrations (
-            id VARCHAR(20) PRIMARY KEY,
+            version VARCHAR(10) PRIMARY KEY,
             name VARCHAR(255) NOT NULL,
             applied_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
           )

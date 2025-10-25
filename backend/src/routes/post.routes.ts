@@ -1,9 +1,9 @@
 import { Router } from 'express';
-import { query } from '../utils/database';
-import { authenticate } from '../middleware/auth';
-import { processHashtags, processMentions } from './social.routes';
-import logger from '../utils/logger';
-import { NotificationService } from '../services/notification.service';
+import { query } from '../utils/database.js';
+import { authenticate } from '../middleware/auth.js';
+import { processHashtags, processMentions } from './social.routes.js';
+import logger from '../utils/logger.js';
+import { NotificationService } from '../services/notification.service.js';
 
 const createPostRoutes = (notificationService: NotificationService) => {
   const router = Router();
@@ -47,11 +47,11 @@ router.get('/', async (req, res) => {
       postsQuery = `
         SELECT 
           p.id, p.title, p.content, p.code, p.language, p.tags, p.college_id, p.created_at, p.updated_at,
-          u.id as author_id, u.username as author_username, u.name as author_name, u.avatar_url as author_avatar_url, u.college_id as author_college_id,
+          u.id as author_id, COALESCE(u.username, 'anonymous') as author_username, COALESCE(u.name, 'Anonymous User') as author_name, u.avatar_url as author_avatar_url, u.college_id as author_college_id,
           (SELECT COUNT(*) FROM comments c WHERE c.post_id = p.id) as comment_count,
           (SELECT COUNT(*) FROM likes l WHERE l.post_id = p.id) as like_count
         FROM posts p
-        JOIN users u ON p.author_id = u.id
+        LEFT JOIN users u ON p.author_id = u.id
         WHERE p.college_id IS NULL
         AND p.author_id IN (
           SELECT following_id FROM follows WHERE follower_id = $3
@@ -64,11 +64,11 @@ router.get('/', async (req, res) => {
       postsQuery = `
         SELECT 
           p.id, p.title, p.content, p.code, p.language, p.tags, p.college_id, p.created_at, p.updated_at,
-          u.id as author_id, u.username as author_username, u.name as author_name, u.avatar_url as author_avatar_url, u.college_id as author_college_id,
+          u.id as author_id, COALESCE(u.username, 'anonymous') as author_username, COALESCE(u.name, 'Anonymous User') as author_name, u.avatar_url as author_avatar_url, u.college_id as author_college_id,
           (SELECT COUNT(*) FROM comments c WHERE c.post_id = p.id) as comment_count,
           (SELECT COUNT(*) FROM likes l WHERE l.post_id = p.id) as like_count
         FROM posts p
-        JOIN users u ON p.author_id = u.id
+        LEFT JOIN users u ON p.author_id = u.id
         WHERE p.college_id IS NULL
         ${orderBy}
         LIMIT $1 OFFSET $2
@@ -284,42 +284,88 @@ router.put('/:id', authenticate, async (req: any, res) => {
     const userId = req.user.userId;
 
     // Check if post exists and user owns it
-    const existingPost = await prisma.post.findFirst({
-      where: { id, authorId: userId }
-    });
+    const existingPostResult = await query(
+      'SELECT id FROM posts WHERE id = $1 AND author_id = $2',
+      [id, userId]
+    );
 
-    if (!existingPost) {
+    if (existingPostResult.rows.length === 0) {
       return res.status(404).json({ error: 'Post not found or unauthorized' });
     }
 
-    const updatedPost = await prisma.post.update({
-      where: { id },
-      data: {
-        ...(title && { title }),
-        ...(content && { content }),
-        ...(code !== undefined && { code }),
-        ...(language && { language }),
-        ...(tags && { tags }),
-      },
-      include: {
-        author: {
-          select: {
-            id: true,
-            username: true,
-            name: true,
-            collegeId: true,
-          }
-        },
-        _count: {
-          select: {
-            comments: true,
-            likes: true,
-          }
-        }
-      }
-    });
+    // Build update query dynamically
+    const updates = [];
+    const values = [];
+    let paramCount = 1;
 
-    res.json(updatedPost);
+    if (title) {
+      updates.push(`title = $${paramCount++}`);
+      values.push(title);
+    }
+    if (content) {
+      updates.push(`content = $${paramCount++}`);
+      values.push(content);
+    }
+    if (code !== undefined) {
+      updates.push(`code = $${paramCount++}`);
+      values.push(code);
+    }
+    if (language) {
+      updates.push(`language = $${paramCount++}`);
+      values.push(language);
+    }
+    if (tags) {
+      updates.push(`tags = $${paramCount++}`);
+      values.push(tags);
+    }
+
+    if (updates.length === 0) {
+      return res.status(400).json({ error: 'No fields to update' });
+    }
+
+    updates.push(`updated_at = CURRENT_TIMESTAMP`);
+    values.push(id);
+
+    const updateQuery = `
+      UPDATE posts 
+      SET ${updates.join(', ')}
+      WHERE id = $${paramCount}
+      RETURNING id, title, content, code, language, tags, created_at, updated_at
+    `;
+
+    const result = await query(updateQuery, values);
+    const updatedPost = result.rows[0];
+
+    // Get author info
+    const authorQuery = `
+      SELECT id, username, name, college_id 
+      FROM users WHERE id = $1
+    `;
+    const authorResult = await query(authorQuery, [userId]);
+    const author = authorResult.rows[0];
+
+    const response = {
+      id: updatedPost.id,
+      title: updatedPost.title,
+      content: updatedPost.content,
+      code: updatedPost.code,
+      language: updatedPost.language,
+      tags: updatedPost.tags,
+      createdAt: updatedPost.created_at,
+      updatedAt: updatedPost.updated_at,
+      author: {
+        id: author.id,
+        username: author.username,
+        name: author.name,
+        collegeId: author.college_id,
+      },
+      _count: {
+        comments: 0,
+        likes: 0,
+      }
+    };
+
+    res.json(response);
   } catch (error) {
     logger.error('Error updating post:', error);
     res.status(500).json({ error: 'Failed to update post' });
@@ -333,17 +379,17 @@ router.delete('/:id', authenticate, async (req: any, res) => {
     const userId = req.user.userId;
 
     // Check if post exists and user owns it
-    const existingPost = await prisma.post.findFirst({
-      where: { id, authorId: userId }
-    });
+    const existingPostResult = await query(
+      'SELECT id FROM posts WHERE id = $1 AND author_id = $2',
+      [id, userId]
+    );
 
-    if (!existingPost) {
+    if (existingPostResult.rows.length === 0) {
       return res.status(404).json({ error: 'Post not found or unauthorized' });
     }
 
-    await prisma.post.delete({
-      where: { id }
-    });
+    // Delete the post
+    await query('DELETE FROM posts WHERE id = $1', [id]);
 
     res.json({ message: 'Post deleted successfully' });
   } catch (error) {

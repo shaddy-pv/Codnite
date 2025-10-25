@@ -1,5 +1,5 @@
-import { query } from '../utils/database';
-import logger from '../utils/logger';
+import { query } from '../utils/database.js';
+import logger from '../utils/logger.js';
 import { Server as SocketIOServer } from 'socket.io';
 
 export interface NotificationData {

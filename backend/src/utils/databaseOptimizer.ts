@@ -1,6 +1,6 @@
 import { Pool } from 'pg';
-import config from '../config/env';
-import logger from './logger';
+import config from '../config/env.js';
+import logger from './logger.js';
 
 /**
  * Database Optimizer

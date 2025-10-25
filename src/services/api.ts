@@ -2,7 +2,7 @@ import axios from 'axios';
 
 // Access Vite env defensively to satisfy TS in all setups
 const VITE_ENV: any = (import.meta as any)?.env || {};
-const API_BASE_URL = VITE_ENV.VITE_API_URL || (VITE_ENV.PROD ? 'https://your-domain.com/api' : '/api');
+const API_BASE_URL = VITE_ENV.VITE_API_URL || '/api';
 
 // Create axios instance
 const apiClient = axios.create({
@@ -135,6 +135,20 @@ export const authAPI = {
       return response.data;
     } catch (error: any) {
       const enhancedError = new Error(error.response?.data?.error || error.message || 'Failed to change password');
+      (enhancedError as any).response = error.response;
+      (enhancedError as any).status = error.response?.status;
+      throw enhancedError;
+    }
+  },
+
+  deleteAccount: async (password: string) => {
+    try {
+      const response = await apiClient.delete('/auth/account', {
+        data: { password }
+      });
+      return response.data;
+    } catch (error: any) {
+      const enhancedError = new Error(error.response?.data?.error || error.message || 'Failed to delete account');
       (enhancedError as any).response = error.response;
       (enhancedError as any).status = error.response?.status;
       throw enhancedError;
@@ -353,6 +367,22 @@ export const postsApi = {
 
   addComment: async (postId: string, content: string) => {
     const response = await apiClient.post(`/posts/${postId}/comments`, { content });
+    return response.data;
+  },
+
+  deletePost: async (postId: string) => {
+    const response = await apiClient.delete(`/posts/${postId}`);
+    return response.data;
+  },
+
+  updatePost: async (postId: string, data: {
+    title?: string;
+    content?: string;
+    code?: string;
+    language?: string;
+    tags?: string[];
+  }) => {
+    const response = await apiClient.put(`/posts/${postId}`, data);
     return response.data;
   },
 };
@@ -594,6 +624,7 @@ export const api = {
   login: authApi.login,
   getMe: authApi.getMe,
   updateProfile: authApi.updateProfile,
+  deleteAccount: authAPI.deleteAccount,
 
   // Posts
   getPosts: postsApi.getPosts,
@@ -602,6 +633,8 @@ export const api = {
   likePost: postsApi.likePost,
   unlikePost: postsApi.unlikePost,
   addComment: postsApi.addComment,
+  deletePost: postsApi.deletePost,
+  updatePost: postsApi.updatePost,
 
   // Challenges
   getChallenges: challengesApi.getChallenges,
@@ -677,9 +710,10 @@ export const api = {
 
   // File Upload
   uploadAvatar: async (formData: FormData) => {
+    // Remove default Content-Type header to let browser set multipart/form-data with boundary
     const response = await apiClient.post('/upload/avatar', formData, {
       headers: {
-        'Content-Type': 'multipart/form-data',
+        'Content-Type': undefined,
       },
     });
     return response.data;

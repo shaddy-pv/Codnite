@@ -1,7 +1,7 @@
 import { Router } from 'express';
-import { authenticate } from '../middleware/auth';
-import { NotificationService } from '../services/notification.service';
-import logger from '../utils/logger';
+import { authenticate } from '../middleware/auth.js';
+import { NotificationService } from '../services/notification.service.js';
+import logger from '../utils/logger.js';
 
 const createTestNotificationRoutes = (notificationService: NotificationService) => {
   const router = Router();

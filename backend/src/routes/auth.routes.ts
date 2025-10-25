@@ -1,10 +1,10 @@
 import { Router } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import { query } from '../utils/database';
-import config from '../config/env';
-import { authenticate } from '../middleware/auth';
-import logger from '../utils/logger';
+import { query } from '../utils/database.js';
+import config from '../config/env.js';
+import { authenticate } from '../middleware/auth.js';
+import logger from '../utils/logger.js';
 
 const router = Router();
 
@@ -416,6 +416,44 @@ router.post('/logout', authenticate, async (req: any, res) => {
   } catch (error) {
     console.error('Logout error:', error);
     res.status(500).json({ error: 'Failed to logout' });
+  }
+});
+
+// Delete account
+router.delete('/account', authenticate, async (req: any, res) => {
+  try {
+    const { password } = req.body;
+    const userId = req.user.userId;
+
+    if (!password) {
+      return res.status(400).json({ error: 'Password is required to delete account' });
+    }
+
+    // Get user with password
+    const result = await query(
+      'SELECT password FROM users WHERE id = $1',
+      [userId]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    const user = result.rows[0];
+
+    // Verify password
+    const isValidPassword = await bcrypt.compare(password, user.password);
+    if (!isValidPassword) {
+      return res.status(401).json({ error: 'Invalid password' });
+    }
+
+    // Delete user account (this will cascade delete related data)
+    await query('DELETE FROM users WHERE id = $1', [userId]);
+
+    res.json({ message: 'Account deleted successfully' });
+  } catch (error) {
+    logger.error('Delete account error:', error);
+    res.status(500).json({ error: 'Failed to delete account' });
   }
 });
 

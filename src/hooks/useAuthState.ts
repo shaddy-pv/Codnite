@@ -36,12 +36,12 @@ export const useAuthState = () => {
     const listener = (state: AuthState) => {
       setAuthState(state);
     };
-    
+
     authListeners.add(listener);
-    
+
     // Set initial state
     setAuthState(globalAuthState);
-    
+
     return () => {
       authListeners.delete(listener);
     };
@@ -52,41 +52,63 @@ export const useAuthState = () => {
     const initializeAuth = async () => {
       const token = localStorage.getItem('token');
       const userData = localStorage.getItem('user');
-      
+
       console.log('🔄 Initializing auth state from localStorage:', {
         token: token ? 'exists' : 'none',
-        user: userData ? 'exists' : 'none'
+        user: userData ? 'exists' : 'none',
+        currentUrl: window.location.href
       });
-      
+
       if (token && userData) {
         try {
-          // Verify token with backend
-          const response = await fetch(`${(import.meta as any).env?.VITE_API_URL || 'http://localhost:5000/api'}/auth/me`, {
-            headers: {
-              'Authorization': `Bearer ${token}`,
-            },
+          // Parse stored user data first
+          const parsedUser = JSON.parse(userData);
+          console.log('📦 Parsed user data:', parsedUser);
+
+          // ALWAYS set authenticated state immediately with stored data
+          // This prevents the logout redirect on refresh
+          updateGlobalAuthState({
+            user: parsedUser,
+            isAuthenticated: true,
+            isLoading: false,
           });
-          
-          if (response.ok) {
-            const user = await response.json();
-            console.log('✅ Token verified, user authenticated');
-            updateGlobalAuthState({
-              user,
-              isAuthenticated: true,
-              isLoading: false,
-            });
-          } else {
-            console.log('❌ Token invalid, clearing auth state');
-            localStorage.removeItem('token');
-            localStorage.removeItem('user');
-            updateGlobalAuthState({
-              user: null,
-              isAuthenticated: false,
-              isLoading: false,
-            });
-          }
-        } catch (error) {
-          console.error('💥 Auth verification failed:', error);
+
+          console.log('✅ User authenticated from localStorage, skipping backend verification for now');
+
+          // Optional: Verify token with backend in background (but don't logout on failure)
+          setTimeout(async () => {
+            try {
+              const apiUrl = (import.meta as any).env?.VITE_API_URL || '/api';
+              console.log('🔍 Background token verification to:', apiUrl);
+
+              const response = await fetch(`${apiUrl}/auth/me`, {
+                headers: {
+                  'Authorization': `Bearer ${token}`,
+                },
+                signal: AbortSignal.timeout(3000), // 3 second timeout
+              });
+
+              if (response.ok) {
+                const freshUser = await response.json();
+                console.log('🔄 Token verified, updating with fresh user data');
+                updateGlobalAuthState({
+                  user: freshUser,
+                  isAuthenticated: true,
+                  isLoading: false,
+                });
+              } else {
+                console.log('⚠️ Token verification failed, but keeping user logged in');
+                // Don't logout on verification failure - keep using stored data
+              }
+            } catch (error: any) {
+              console.log('⚠️ Background token verification failed, but keeping user logged in:', error.message);
+              // Don't logout on network errors - keep using stored data
+            }
+          }, 1000); // Delay verification by 1 second
+
+        } catch (error: any) {
+          console.error('💥 Error parsing stored user data:', error);
+          // Only clear if the stored data is corrupted
           localStorage.removeItem('token');
           localStorage.removeItem('user');
           updateGlobalAuthState({
@@ -112,15 +134,15 @@ export const useAuthState = () => {
   }, []);
 
   const login = useCallback((userData: any, token: string) => {
-    console.log('🚀 Global login called:', { 
-      user: userData?.name, 
-      token: token ? 'exists' : 'none' 
+    console.log('🚀 Global login called:', {
+      user: userData?.name,
+      token: token ? 'exists' : 'none'
     });
-    
+
     // Store in localStorage
     localStorage.setItem('token', token);
     localStorage.setItem('user', JSON.stringify(userData));
-    
+
     // Update global state
     updateGlobalAuthState({
       user: userData,
@@ -131,11 +153,11 @@ export const useAuthState = () => {
 
   const logout = useCallback(() => {
     console.log('🚪 Global logout called');
-    
+
     // Clear localStorage
     localStorage.removeItem('token');
     localStorage.removeItem('user');
-    
+
     // Update global state
     updateGlobalAuthState({
       user: null,

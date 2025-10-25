@@ -6,6 +6,7 @@ import Loading from './ui/Loading';
 import { api, Post } from '../services/api';
 import { useToast } from './ui/Toast';
 import CommentSection from './CommentSection';
+import { useAuthState } from '../hooks/useAuthState';
 
 interface PostCardProps {
   post: Post;
@@ -14,6 +15,7 @@ interface PostCardProps {
   onShare?: (postId: string) => void;
   onBookmark?: (postId: string) => void;
   onCommentCountChange?: (postId: string, count: number) => void;
+  onDelete?: (postId: string) => void;
   showActions?: boolean;
   showComments?: boolean;
 }
@@ -25,6 +27,7 @@ const PostCardComponent: React.FC<PostCardProps> = ({
   onShare,
   onBookmark,
   onCommentCountChange,
+  onDelete,
   showActions = true,
   showComments = false
 }) => {
@@ -33,6 +36,7 @@ const PostCardComponent: React.FC<PostCardProps> = ({
     return null;
   }
 
+  const { user } = useAuthState();
   const [isLiked, setIsLiked] = useState(false);
   const [likesCount, setLikesCount] = useState(post._count?.likes || 0);
   const [isLoading, setIsLoading] = useState(false);
@@ -41,6 +45,20 @@ const PostCardComponent: React.FC<PostCardProps> = ({
   const [isBookmarkLoading, setIsBookmarkLoading] = useState(false);
   const [showOptionsMenu, setShowOptionsMenu] = useState(false);
   const { success, error } = useToast();
+
+  // Check if current user can delete this post
+  const canDeletePost = user && (user.id === post.author?.id || user.role === 'admin');
+  
+  // Debug logging
+  useEffect(() => {
+    console.log('🔍 PostCard Debug Info:', {
+      postId: post.id,
+      postAuthor: post.author,
+      currentUser: user,
+      canDelete: canDeletePost,
+      isAuthenticated: !!user
+    });
+  }, [user, post.id, canDeletePost]);
 
   // Sync showComments prop with internal state
   useEffect(() => {
@@ -138,12 +156,33 @@ const PostCardComponent: React.FC<PostCardProps> = ({
 
   const handleDelete = async () => {
     setShowOptionsMenu(false);
+    
+    console.log('🗑️ Delete button clicked for post:', post.id);
+    console.log('👤 Current user:', user);
+    console.log('✏️ Post author:', post.author);
+    console.log('🔐 Can delete:', canDeletePost);
+    
+    if (!canDeletePost) {
+      error('You do not have permission to delete this post');
+      return;
+    }
+    
     if (window.confirm('Are you sure you want to delete this post?')) {
       try {
-        // TODO: Implement delete API call
+        setIsLoading(true);
+        console.log('🚀 Calling delete API for post:', post.id);
+        
+        const result = await api.deletePost(post.id);
+        console.log('✅ Delete API response:', result);
+        
         success('Post deleted successfully');
+        // Call the onDelete callback if provided
+        onDelete?.(post.id);
       } catch (err: any) {
-        error('Failed to delete post', err.message);
+        console.error('❌ Delete API error:', err);
+        error('Failed to delete post', err.response?.data?.error || err.message);
+      } finally {
+        setIsLoading(false);
       }
     }
   };
@@ -208,13 +247,20 @@ const PostCardComponent: React.FC<PostCardProps> = ({
                     <Flag className="w-4 h-4 mr-3" />
                     Report Post
                   </button>
-                  <button
-                    onClick={handleDelete}
-                    className="flex items-center w-full px-4 py-2 text-sm text-error-400 hover:bg-error-500/10 hover:text-error-300 transition-all duration-300 rounded-lg mx-2"
-                  >
-                    <Trash2 className="w-4 h-4 mr-3" />
-                    Delete Post
-                  </button>
+                  {canDeletePost && (
+                    <button
+                      onClick={handleDelete}
+                      disabled={isLoading}
+                      className="flex items-center w-full px-4 py-2 text-sm text-error-400 hover:bg-error-500/10 hover:text-error-300 transition-all duration-300 rounded-lg mx-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {isLoading ? (
+                        <Loading size="sm" />
+                      ) : (
+                        <Trash2 className="w-4 h-4 mr-3" />
+                      )}
+                      Delete Post
+                    </button>
+                  )}
                 </div>
                 <div 
                   className="fixed inset-0 z-10" 

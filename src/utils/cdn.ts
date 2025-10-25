@@ -220,7 +220,7 @@ export const resourceHints = {
 
 // Default CDN configuration
 export const defaultCDNConfig: CDNConfig = {
-  baseUrl: process.env.REACT_APP_CDN_URL || 'https://cdn.codnite.com',
+  baseUrl: process.env.REACT_APP_CDN_URL || '/uploads',
   region: 'us-east-1',
   version: 'v1'
 }

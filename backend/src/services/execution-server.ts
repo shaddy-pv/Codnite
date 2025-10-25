@@ -2,8 +2,8 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
-import CodeExecutionService from './CodeExecutionService';
-import logger from './utils/logger';
+import CodeExecutionService from './CodeExecutionService.js';
+import logger from '../utils/logger.js';
 
 const app = express();
 const executionService = new CodeExecutionService();
@@ -15,7 +15,7 @@ app.use(morgan('combined'));
 app.use(express.json({ limit: '10mb' }));
 
 // Health check
-app.get('/health', async (req, res) => {
+app.get('/health', async (req: express.Request, res: express.Response) => {
   try {
     const isHealthy = await executionService.healthCheck();
     res.json({ 
@@ -23,7 +23,7 @@ app.get('/health', async (req, res) => {
       service: 'code-execution',
       timestamp: new Date().toISOString()
     });
-  } catch (error) {
+  } catch (error: any) {
     res.status(503).json({ 
       status: 'unhealthy',
       service: 'code-execution',
@@ -34,7 +34,7 @@ app.get('/health', async (req, res) => {
 });
 
 // Execute code endpoint
-app.post('/execute', async (req, res) => {
+app.post('/execute', async (req: express.Request, res: express.Response) => {
   try {
     const { code, language, testCases, timeLimit, memoryLimit } = req.body;
 
@@ -53,7 +53,7 @@ app.post('/execute', async (req, res) => {
     });
 
     res.json({ results });
-  } catch (error) {
+  } catch (error: any) {
     logger.error('Execution error:', error);
     res.status(500).json({ 
       error: 'Failed to execute code',
@@ -72,11 +72,11 @@ app.use((error: any, req: express.Request, res: express.Response, next: express.
 });
 
 // 404 handler
-app.use('*', (req, res) => {
+app.use('*', (req: express.Request, res: express.Response) => {
   res.status(404).json({ error: 'Endpoint not found' });
 });
 
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 5001; // Use different port to avoid conflict
 
 app.listen(PORT, () => {
   logger.info(`Code execution service running on port ${PORT}`);

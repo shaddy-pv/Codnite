@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import Navbar from './components/layout/Navbar';
 import Sidebar from './components/layout/Sidebar';
@@ -13,6 +13,7 @@ import PerformanceMonitor from './components/PerformanceMonitor';
 import SearchModal from './components/SearchModal';
 import ChatSystem from './components/ChatSystem';
 import AdminDashboard from './components/AdminDashboard';
+import DebugPanel from './components/DebugPanel';
 import { useAuthState } from './hooks/useAuthState';
 
 // Lazy load pages
@@ -37,7 +38,7 @@ export function App() {
   // Use HMR-resistant authentication hook
   const { user, isAuthenticated, isLoading, login, logout } = useAuthState();
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
-  const [showLogin, setShowLogin] = useState(true); // Changed to true to show login by default
+  const [showLogin, setShowLogin] = useState(true); // Show login by default
   const [showSearchModal, setShowSearchModal] = useState(false);
   const [showChatSystem, setShowChatSystem] = useState(false);
   const [showAdminDashboard, setShowAdminDashboard] = useState(false);
@@ -120,6 +121,19 @@ export function App() {
     setShowLogin(false);
     console.log('Switched to register, showLogin is now:', false);
   };
+
+  // Check URL parameters to determine initial view
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const action = urlParams.get('action');
+    
+    if (action === 'register' || action === 'signup') {
+      setShowLogin(false);
+    } else {
+      // Default to login
+      setShowLogin(true);
+    }
+  }, []);
 
   if (isLoading) {
     console.log('⏳ App is loading...');
@@ -242,6 +256,9 @@ export function App() {
             isOpen={showAdminDashboard} 
             onClose={() => setShowAdminDashboard(false)} 
           />
+          
+          {/* Debug Panel - only shows in development */}
+          <DebugPanel />
         </Router>
       </ErrorBoundary>
     </ThemeProvider>

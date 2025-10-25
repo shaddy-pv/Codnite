@@ -1,8 +1,8 @@
 import { Request, Response } from 'express';
 import { Pool } from 'pg';
 import Redis from 'ioredis';
-import { config } from '../config/env';
-import logger from './logger';
+import { config } from '../config/env.js';
+import logger from './logger.js';
 import os from 'os';
 import fs from 'fs/promises';
 import path from 'path';

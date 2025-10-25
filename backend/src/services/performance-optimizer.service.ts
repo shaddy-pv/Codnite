@@ -1,6 +1,6 @@
-import { query } from '../utils/database';
-import cacheService from './cache.service';
-import logger from '../utils/logger';
+import { query } from '../utils/database.js';
+import cacheService from './cache.service.js';
+import logger from '../utils/logger.js';
 
 interface QueryOptimization {
   query: string;
