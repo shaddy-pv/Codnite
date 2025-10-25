@@ -1,4 +1,8 @@
 services:
+  - type: redis
+    name: codnite-redis
+    ipAllowList: []
+
   - type: web
     name: codnite-backend
     env: docker
@@ -35,6 +39,3 @@ databases:
   - name: codnite-db
     databaseName: codnite_production
     user: codnite_user
-
-  - name: codnite-redis
-    type: redis
