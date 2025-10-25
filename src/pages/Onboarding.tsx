@@ -153,12 +153,11 @@ const Onboarding: React.FC<OnboardingProps> = ({
         {/* Logo */}
         <div className="flex justify-center mb-8">
           <div className="flex items-center">
-            <div className="bg-gradient-to-r from-primary-blue to-primary-purple rounded-lg h-10 w-10 flex items-center justify-center mr-3">
-              <span className="text-white font-bold text-xl">C</span>
-            </div>
-            <span className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary-blue to-primary-purple">
-              Codnite
-            </span>
+            <img 
+              src="/assets/codinte-logo-2.png" 
+              alt="Codnite Logo" 
+              className="h-12 w-auto"
+            />
           </div>
         </div>
         {/* Tagline */}
