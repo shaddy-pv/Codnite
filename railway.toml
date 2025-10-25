@@ -1,0 +1,13 @@
+[build]
+builder = "nixpacks"
+
+[deploy]
+healthcheckPath = "/health"
+healthcheckTimeout = 300
+restartPolicyType = "on_failure"
+restartPolicyMaxRetries = 3
+
+[variables]
+NODE_ENV = "production"
+VITE_API_URL = "/api"
+VITE_APP_NAME = "Codnite"
